@@ -63,6 +63,149 @@ export default function ProfilePage() {
     setTimeout(() => setCleared(false), 2500);
   };
 
+  const downloadPassportAsImage = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 600;
+    canvas.height = 360;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Draw background gradient
+    const grad = ctx.createLinearGradient(0, 0, 600, 360);
+    grad.addColorStop(0, "#9f1239"); // rose-800
+    grad.addColorStop(1, "#1e1b4b"); // indigo-950
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 600, 360);
+
+    // Draw card border
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(10, 10, 580, 340);
+
+    // Draw Badge Background
+    ctx.fillStyle = "rgba(244, 63, 94, 0.2)";
+    ctx.beginPath();
+    ctx.roundRect(30, 25, 140, 20, 10);
+    ctx.fill();
+
+    // Badge Text
+    ctx.fillStyle = "#fecdd3";
+    ctx.font = "bold 9px monospace";
+    ctx.fillText("EMERGENCY MEDICAL PASS", 40, 38);
+
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "bold 9px sans-serif";
+    ctx.fillText("REVIVE SPIROMETRY", 185, 38);
+
+    // Patient Name
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillText(profile.name || "Anonymous Patient", 30, 80);
+
+    // Age / Sex / City
+    ctx.fillStyle = "#fecdd3";
+    ctx.font = "12px sans-serif";
+    ctx.fillText(`Age: ${profile.age || "N/A"}  |  Sex: ${profile.sex || "N/A"}  |  City: ${profile.city || "N/A"}`, 30, 105);
+
+    // Emergency Contact section
+    ctx.fillStyle = "#fecdd3";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("EMERGENCY CONTACT", 30, 145);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px sans-serif";
+    ctx.fillText(profile.emergencyName || "No contact set", 30, 165);
+
+    ctx.fillStyle = "#fecdd3";
+    ctx.font = "11px monospace";
+    ctx.fillText(profile.emergencyPhone || "—", 30, 182);
+
+    // Last PFT Baseline
+    const history = loadHistory();
+    const lastRecord = history[0];
+    const ratioText = lastRecord ? `${lastRecord.ratio.toFixed(1)}%` : "N/A";
+    const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : "No test run";
+    const statusText = lastRecord ? lastRecord.status.toUpperCase() : "N/A";
+
+    ctx.fillStyle = "#fecdd3";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText(`LAST PFT BASELINE (${dateText})`, 30, 215);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 11px sans-serif";
+    ctx.fillText("FEV1/FVC Ratio", 30, 235);
+
+    ctx.fillStyle = lastRecord?.status === 'red' ? '#fda4af' : lastRecord?.status === 'yellow' ? '#fde047' : '#6ee7b7';
+    ctx.font = "bold 18px monospace";
+    ctx.fillText(ratioText, 30, 255);
+
+    // Action plan text block
+    const actionPlan = lastRecord?.status === "red"
+      ? "RED ZONE: Severe obstruction. Use rescue inhaler. Seek immediate emergency help."
+      : lastRecord?.status === "yellow"
+      ? "YELLOW ZONE: Mild/moderate obstruction. Assist with reliever inhaler. Monitor symptoms."
+      : "GREEN ZONE: Lung function stable. Maintain standard maintenance inhaler routines.";
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.fillRect(30, 275, 360, 55);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.strokeRect(30, 275, 360, 55);
+
+    ctx.fillStyle = "#fecdd3";
+    ctx.font = "bold 9px sans-serif";
+    ctx.fillText("EMERGENCY ACTION PLAN", 38, 290);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "10px sans-serif";
+    // Word wrap action plan
+    const words = actionPlan.split(" ");
+    let line = "";
+    let y = 305;
+    for (let n = 0; n < words.length; n++) {
+      let testLine = line + words[n] + " ";
+      let metrics = ctx.measureText(testLine);
+      if (metrics.width > 340 && n > 0) {
+        ctx.fillText(line, 38, y);
+        line = words[n] + " ";
+        y += 14;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, 38, y);
+
+    // Load and draw the QR Code image
+    const qrPayload = `RE-VIVE RESPIRATORY PASSPORT\nName: ${profile.name || "Anonymous"}\nAge: ${profile.age}\nSex: ${profile.sex}\nEmergency Contact: ${profile.emergencyName} (${profile.emergencyPhone})\nLast PFT: ${ratioText} (${dateText})\nStatus: ${statusText}\nPlan: ${actionPlan}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrPayload)}`;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = qrCodeUrl;
+    img.onload = () => {
+      // Draw white background for QR
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(430, 95, 140, 140, 16);
+      ctx.fill();
+
+      // Draw QR image
+      ctx.drawImage(img, 440, 105, 120, 120);
+
+      // Draw label
+      ctx.fillStyle = "#cbd5e1";
+      ctx.font = "bold 8px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("SCAN FOR MEDICAL INFO", 500, 255);
+
+      // Trigger download
+      const dataUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${(profile.name || "revive_patient").toLowerCase().replace(/\s+/g, "_")}_passport.png`;
+      a.click();
+    };
+  };
+
   const field = (label: string, key: keyof UserProfile, placeholder: string, type = "text") => (
     <div className="flex flex-col gap-1.5 text-left">
       <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#64748B]">
@@ -424,35 +567,11 @@ export default function ProfilePage() {
             <Printer className="w-4 h-4" /> Print Pocket Card
           </button>
           <button
-            onClick={() => {
-              const history = loadHistory();
-              const lastRecord = history[0];
-              const passportData = {
-                name: profile.name,
-                age: profile.age,
-                sex: profile.sex,
-                city: profile.city,
-                emergencyContact: `${profile.emergencyName} (${profile.emergencyPhone})`,
-                lastPft: lastRecord ? {
-                  fev1: lastRecord.fev1,
-                  fvc: lastRecord.fvc,
-                  ratio: lastRecord.ratio,
-                  date: lastRecord.date,
-                  status: lastRecord.status
-                } : null
-              };
-              const blob = new Blob([JSON.stringify(passportData, null, 2)], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `${(profile.name || "revive_patient").toLowerCase().replace(/\s+/g, "_")}_passport.json`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
+            onClick={downloadPassportAsImage}
             className="flex-1 py-3 rounded-xl text-xs font-black text-white flex items-center justify-center gap-2 transition hover:opacity-90 active:scale-95 cursor-pointer"
             style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 4px 16px rgba(27,45,107,0.25)" }}
           >
-            <Share2 className="w-4 h-4" /> Download Medical Pass
+            <Share2 className="w-4 h-4" /> Download Pocket Pass (PNG)
           </button>
         </div>
       </motion.div>
