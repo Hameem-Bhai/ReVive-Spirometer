@@ -175,10 +175,36 @@ export default function ChatbotPage() {
         <div className="flex items-center justify-between pb-4 border-b border-[rgba(27,45,107,0.07)]">
           <div className="flex items-center gap-3">
             <div className="relative animate-float">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-tr from-[#1B2D6B] to-[#2563EB]" style={{
-                boxShadow: '0 6px 20px rgba(27,45,107,0.3)'
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-slate-950/5 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/50" style={{
+                boxShadow: '0 4px 16px rgba(27,45,107,0.06)'
               }}>
-                <Wind className="w-5 h-5 text-white" />
+                <svg viewBox="0 0 100 100" className="w-6 h-6 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="logoBotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#60a5fa" />
+                      <stop offset="50%" stopColor="#2563eb" />
+                      <stop offset="100%" stopColor="#1d4ed8" />
+                    </linearGradient>
+                  </defs>
+                  <path 
+                    d="M48 25C40 12, 12 8, 5 35 C -2 60, 2 82, 24 90 C 40 95, 48 80, 48 68 Z" 
+                    fill="url(#logoBotGrad)" 
+                    opacity="0.85" 
+                  />
+                  <path 
+                    d="M52 25C60 12, 88 8, 95 35 C 102 60, 98 82, 76 90 C 60 95, 52 80, 52 68 Z" 
+                    fill="url(#logoBotGrad)" 
+                    opacity="0.95" 
+                  />
+                  <path 
+                    d="M50 8 V45 L 38 56 M 50 45 L 62 56" 
+                    stroke="white" 
+                    strokeWidth="6" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    opacity="0.9"
+                  />
+                </svg>
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 animate-pulse"
                 style={{ borderColor: '#FFFFFF' }} />

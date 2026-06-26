@@ -8,6 +8,47 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/lib/theme";
 import { loadProfile } from "@/lib/storage";
 
+const PremiumLogoIcon = ({ isClinician }: { isClinician: boolean }) => {
+  const gradId = isClinician ? "logoClinicianGrad" : "logoPatientGrad";
+  return (
+    <svg viewBox="0 0 100 100" className="w-6 h-6 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {isClinician ? (
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f87171" />
+            <stop offset="50%" stopColor="#ef4444" />
+            <stop offset="100%" stopColor="#b91c1c" />
+          </linearGradient>
+        ) : (
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" />
+            <stop offset="50%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#1d4ed8" />
+          </linearGradient>
+        )}
+      </defs>
+      <path 
+        d="M48 25C40 12, 12 8, 5 35 C -2 60, 2 82, 24 90 C 40 95, 48 80, 48 68 Z" 
+        fill={`url(#${gradId})`} 
+        opacity="0.85" 
+      />
+      <path 
+        d="M52 25C60 12, 88 8, 95 35 C 102 60, 98 82, 76 90 C 60 95, 52 80, 52 68 Z" 
+        fill={`url(#${gradId})`} 
+        opacity="0.95" 
+      />
+      <path 
+        d="M50 8 V45 L 38 56 M 50 45 L 62 56" 
+        stroke="white" 
+        strokeWidth="6" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        opacity="0.9"
+      />
+    </svg>
+  );
+};
+
 interface NavigationShellProps {
   children: React.ReactNode;
 }
@@ -77,12 +118,11 @@ export default function NavigationShell({ children }: NavigationShellProps) {
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-slate-950/5 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/50"
                   style={{ 
-                    background: isClinicianMode ? "linear-gradient(135deg, #991b1b, #dc2626)" : "linear-gradient(135deg, #1B2D6B, #2563EB)", 
-                    boxShadow: isClinicianMode ? "0 4px 16px rgba(220,38,38,0.3)" : "0 4px 16px rgba(27,45,107,0.3)" 
+                    boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 16px rgba(27,45,107,0.06)" 
                   }}>
-                  {isClinicianMode ? <Stethoscope className="w-5 h-5 text-white" /> : <Wind className="w-5 h-5 text-white" />}
+                  <PremiumLogoIcon isClinician={isClinicianMode} />
                 </div>
                 <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 animate-pulse"
                   style={{ background: isClinicianMode ? "#dc2626" : "#10b981", borderColor: isDark ? "rgb(10,14,26)" : "#FFFFFF" }} />
