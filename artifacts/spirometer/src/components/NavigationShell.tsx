@@ -10,41 +10,53 @@ import { loadProfile } from "@/lib/storage";
 
 const PremiumLogoIcon = ({ isClinician }: { isClinician: boolean }) => {
   const gradId = isClinician ? "logoClinicianGrad" : "logoPatientGrad";
+  const maskId = isClinician ? "logoClinicianMask" : "logoPatientMask";
   return (
-    <svg viewBox="0 0 100 100" className="w-6 h-6 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 100 100" className="w-7 h-7 shrink-0 transition-transform duration-300 hover:scale-105" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         {isClinician ? (
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f87171" />
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#fca5a5" />
             <stop offset="50%" stopColor="#ef4444" />
             <stop offset="100%" stopColor="#b91c1c" />
           </linearGradient>
         ) : (
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#60a5fa" />
-            <stop offset="50%" stopColor="#2563eb" />
-            <stop offset="100%" stopColor="#1d4ed8" />
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#8ED6D6" />
+            <stop offset="50%" stopColor="#136c72" />
+            <stop offset="100%" stopColor="#0d5b5b" />
           </linearGradient>
         )}
+        <mask id={maskId}>
+          {/* White retains full opacity */}
+          <rect x="0" y="0" width="100" height="100" fill="white" />
+          {/* Heartbeat cut line - black stroke masks out the path */}
+          <path 
+            d="M 5 56 Q 22 48, 32 62 T 48 56 M 52 56 Q 60 64, 67 22 T 74 74 T 80 56 H 95" 
+            stroke="black" 
+            strokeWidth="5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            fill="none"
+          />
+        </mask>
       </defs>
-      <path 
-        d="M48 25C40 12, 12 8, 5 35 C -2 60, 2 82, 24 90 C 40 95, 48 80, 48 68 Z" 
-        fill={`url(#${gradId})`} 
-        opacity="0.85" 
-      />
-      <path 
-        d="M52 25C60 12, 88 8, 95 35 C 102 60, 98 82, 76 90 C 60 95, 52 80, 52 68 Z" 
-        fill={`url(#${gradId})`} 
-        opacity="0.95" 
-      />
-      <path 
-        d="M50 8 V45 L 38 56 M 50 45 L 62 56" 
-        stroke="white" 
-        strokeWidth="6" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        opacity="0.9"
-      />
+      
+      {/* Lobe elements nested inside the heartbeat mask */}
+      <g mask={`url(#${maskId})`}>
+        {/* Left Lung Lobe */}
+        <path 
+          d="M 45 15 C 28 17, 12 30, 8 52 C 5 70, 10 82, 24 88 C 36 92, 45 80, 45 68 Z" 
+          fill={`url(#${gradId})`}
+        />
+        {/* Right Lung Lobe */}
+        <path 
+          d="M 55 15 C 72 17, 88 30, 92 52 C 95 70, 90 82, 76 88 C 64 92, 55 80, 55 68 Z" 
+          fill={`url(#${gradId})`}
+        />
+        {/* Trachea */}
+        <rect x="48" y="18" width="4" height="24" rx="2" fill={`url(#${gradId})`} opacity="0.8" />
+      </g>
     </svg>
   );
 };
