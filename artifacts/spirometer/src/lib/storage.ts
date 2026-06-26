@@ -12,6 +12,8 @@ export interface UserProfile {
   city: string;
   remindersEnabled: boolean;
   reminderFrequency: "daily" | "every3days" | "weekly";
+  emergencyName?: string;
+  emergencyPhone?: string;
 }
 
 export interface TestRecord {
@@ -50,6 +52,8 @@ export const DEFAULT_PROFILE: UserProfile = {
   city: "",
   remindersEnabled: false,
   reminderFrequency: "weekly",
+  emergencyName: "",
+  emergencyPhone: "",
 };
 
 export function loadProfile(): UserProfile {
