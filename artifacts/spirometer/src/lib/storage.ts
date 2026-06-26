@@ -133,9 +133,9 @@ export function classifyRatio(ratio: number): "green" | "yellow" | "red" {
 // ─── Reminders ────────────────────────────────────────────
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (!("Notification" in window)) return false;
-  if (Notification.permission === "granted") return true;
-  const result = await Notification.requestPermission();
+  if (!("Notification" in window) || !window.Notification) return false;
+  if (window.Notification.permission === "granted") return true;
+  const result = await window.Notification.requestPermission();
   return result === "granted";
 }
 
@@ -152,11 +152,12 @@ export function scheduleTestReminder(frequency: "daily" | "every3days" | "weekly
 }
 
 export function checkAndFireReminder(): void {
-  if (Notification.permission !== "granted") return;
+  if (!("Notification" in window) || !window.Notification) return;
+  if (window.Notification.permission !== "granted") return;
   const nextStr = localStorage.getItem("revive_next_reminder");
   if (!nextStr) return;
   if (new Date() >= new Date(nextStr)) {
-    new Notification("ReVive — Time to run your spirometry test 🫁", {
+    new window.Notification("ReVive — Time to run your spirometry test 🫁", {
       body: "Track your lung health by running a quick spirometry check today.",
       icon: "/favicon.svg",
     });

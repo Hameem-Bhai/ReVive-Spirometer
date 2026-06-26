@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+      window.addEventListener('error', function(e) {
+        var div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.background = '#ef4444';
+        div.style.color = '#ffffff';
+        div.style.padding = '20px';
+        div.style.fontSize = '14px';
+        div.style.fontFamily = 'monospace';
+        div.style.zIndex = '999999';
+        div.style.whiteSpace = 'pre-wrap';
+        div.style.boxSizing = 'border-box';
+        div.innerText = 'CRITICAL RUNTIME ERROR:\n' + e.message + '\n\nSource: ' + e.filename + ':' + e.lineno + '\n\nStack:\n' + (e.error ? e.error.stack : 'No stack available');
+        document.body.appendChild(div);
+      });
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>ReVive — At-Home Lung Diagnostics</title>
@@ -9,10 +28,14 @@
     <meta property="og:title" content="ReVive — At-Home Lung Diagnostics" />
     <meta property="og:description" content="ReVive: Open-source spirometry platform for at-home lung screening." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/opengraph.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ReVive — At-Home Lung Diagnostics" />
     <meta name="twitter:description" content="ReVive: Open-source spirometry platform for at-home lung screening." />
+    <meta name="twitter:image" content="/opengraph.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1B2D6B" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -26,10 +49,32 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
+      try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker) {
+          const isDev = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' || 
+                        window.location.hostname.startsWith('192.168.') ||
+                        window.location.port === '3000';
+          
+          if (isDev) {
+            if (typeof navigator.serviceWorker.getRegistrations === 'function') {
+              navigator.serviceWorker.getRegistrations().then(registrations => {
+                if (registrations && registrations.length) {
+                  for (let registration of registrations) {
+                    registration.unregister();
+                    console.log('Dev Mode: Unregistered stale service worker.');
+                  }
+                }
+              }).catch(e => console.warn('SW unregister failed:', e));
+            }
+          } else {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js').catch(e => {});
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Service worker init error:', err);
       }
     </script>
   </body>

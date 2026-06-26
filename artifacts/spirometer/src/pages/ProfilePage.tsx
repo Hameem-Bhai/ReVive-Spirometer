@@ -30,11 +30,11 @@ export default function ProfilePage() {
 
   // Check notification permission on mount
   React.useEffect(() => {
-    if (!("Notification" in window)) {
+    if (!("Notification" in window) || !window.Notification) {
       setNotifStatus("unsupported");
-    } else if (Notification.permission === "granted") {
+    } else if (window.Notification.permission === "granted") {
       setNotifStatus("granted");
-    } else if (Notification.permission === "denied") {
+    } else if (window.Notification.permission === "denied") {
       setNotifStatus("denied");
     }
   }, []);
