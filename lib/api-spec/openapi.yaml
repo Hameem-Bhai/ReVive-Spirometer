@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: spirometer
+    description: Spirometer analysis operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /spirometer/analyze:
+    post:
+      operationId: analyzeSpirometer
+      tags: [spirometer]
+      summary: Analyze spirometer data
+      description: Sends spirometer round data and demographics to OpenAI for analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpiroInput"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpiroAnalysis"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    SpiroRound:
+      type: object
+      properties:
+        roundNumber:
+          type: integer
+        peakPressure:
+          type: number
+        avgPressure:
+          type: number
+        minPressure:
+          type: number
+        maxPressure:
+          type: number
+        rawReadings:
+          type: array
+          items:
+            type: number
+        durationSeconds:
+          type: number
+      required:
+        - roundNumber
+        - peakPressure
+        - avgPressure
+        - rawReadings
+        - durationSeconds
+    SpiroInput:
+      type: object
+      properties:
+        age:
+          type: ["integer", "null"]
+        sex:
+          type: ["string", "null"]
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpiroRound"
+      required:
+        - rounds
+    SpiroMetric:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        unit:
+          type: string
+        percentOfNormal:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [green, yellow, red]
+        interpretation:
+          type: string
+      required:
+        - label
+        - value
+        - unit
+        - status
+        - interpretation
+    SpiroAnalysis:
+      type: object
+      properties:
+        overallStatus:
+          type: string
+          enum: [green, yellow, red]
+        summary:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpiroMetric"
+        recommendations:
+          type: array
+          items:
+            type: string
+        disclaimer:
+          type: string
+      required:
+        - overallStatus
+        - summary
+        - metrics
+        - recommendations
+        - disclaimer
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

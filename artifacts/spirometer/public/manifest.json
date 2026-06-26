@@ -1,0 +1,32 @@
+{
+  "name": "ReVive — At-Home Lung Diagnostics",
+  "short_name": "ReVive",
+  "description": "At-home spirometry testing, AQI monitoring, and AI-powered pulmonology assistance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e18",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["health", "medical", "fitness"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Run Test",
+      "url": "/test",
+      "description": "Start a new spirometry test"
+    },
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your health dashboard"
+    }
+  ]
+}
