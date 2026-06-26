@@ -110,12 +110,34 @@ function Router() {
   );
 }
 
+// Custom hook to support hash routing in wouter
+const useHashLocation = () => {
+  const [loc, setLoc] = React.useState(
+    () => window.location.hash.replace(/^#/, "") || "/"
+  );
+
+  React.useEffect(() => {
+    const handler = () => {
+      setLoc(window.location.hash.replace(/^#/, "") || "/");
+    };
+
+    window.addEventListener("hashchange", handler);
+    return () => window.removeEventListener("hashchange", handler);
+  }, []);
+
+  const navigate = React.useCallback((to: string) => {
+    window.location.hash = to;
+  }, []);
+
+  return [loc, navigate] as [string, (to: string) => void];
+};
+
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <WouterRouter hook={useHashLocation}>
             <Router />
           </WouterRouter>
           <Toaster />

@@ -46,13 +46,13 @@ export default function NavigationShell({ children }: NavigationShellProps) {
 
   return (
     <div className="min-h-screen font-sans flex flex-col relative overflow-hidden" style={{ background: appBg }}>
-      {/* Background animated mesh gradient orbs */}
+      {/* Background animated mesh gradient orbs (hidden on mobile for 60/120fps performance) */}
       <div className="absolute inset-0 bg-dots opacity-[0.15] pointer-events-none z-0" />
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 opacity-[0.25] blur-[80px] animate-blob-1"
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 opacity-[0.25] blur-[80px] animate-blob-1 hidden md:block"
         style={{ background: "radial-gradient(circle, #3b82f6 0%, #a855f7 70%)" }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 opacity-[0.2] blur-[100px] animate-blob-2"
+      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 opacity-[0.2] blur-[100px] animate-blob-2 hidden md:block"
         style={{ background: "radial-gradient(circle, #10b981 0%, #6366f1 70%)" }} />
-      <div className="absolute top-[30%] right-[20%] w-[400px] h-[400px] rounded-full pointer-events-none z-0 opacity-[0.15] blur-[90px] animate-blob-3"
+      <div className="absolute top-[30%] right-[20%] w-[400px] h-[400px] rounded-full pointer-events-none z-0 opacity-[0.15] blur-[90px] animate-blob-3 hidden md:block"
         style={{ background: "radial-gradient(circle, #ec4899 0%, #f43f5e 70%)" }} />
       
       {/* ────────── TOP STICKY HEADER (PC & Mobile) ────────── */}
