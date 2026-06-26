@@ -37,6 +37,61 @@ interface GeocodedCity {
 }
 
 export default function EducationPage() {
+  // --- 🫁 ANATOMY EXPLORER STATE ---
+  const [selectedRegion, setSelectedRegion] = React.useState<string | null>(null);
+  const [hoveredRegion, setHoveredRegion] = React.useState<string | null>(null);
+  const [simulatedCapacity, setSimulatedCapacity] = React.useState<number>(0.8);
+
+  const regionData: Record<string, {
+    title: string;
+    function: string;
+    clinical: string;
+    tip: string;
+    colorClass: string;
+    icon: React.ReactNode;
+  }> = {
+    trachea: {
+      title: "Trachea (Windpipe)",
+      function: "A rigid tube of cartilaginous rings that provides a secure pathway for inhaled air to travel from the vocal cords down into the chest.",
+      clinical: "In asthma, hyperresponsive cells line the airway, triggering inflammation. In severe cases, the trachea's mucous membranes swell, contributing to air obstruction.",
+      tip: "Stay hydrated! Water keeps the protective mucus layer thin, helping the trachea's microscopic cilia sweep away dust, pollen, and viral invaders.",
+      colorClass: "text-[#2563EB] bg-[#2563EB]/5 border-[#2563EB]/15",
+      icon: <Activity className="w-5 h-5 text-[#2563EB]" />,
+    },
+    bronchi: {
+      title: "Bronchial Tree",
+      function: "Branching tubes (bronchi and smaller bronchioles) that distribute air uniformly throughout the different lobes of the left and right lungs.",
+      clinical: "Asthma attacks directly target these branches. The smooth muscles wrapping the tubes contract violently (bronchospasms), and the lining swells, making the airway extremely narrow.",
+      tip: "Use your bronchodilator (rescue inhaler) exactly as prescribed. It acts directly on the smooth muscles of the bronchi to dilate and open them up in minutes.",
+      colorClass: "text-[#0891b2] bg-[#0891b2]/5 border-[#0891b2]/15",
+      icon: <Wind className="w-5 h-5 text-[#0891b2]" />,
+    },
+    lungs: {
+      title: "Lung Lobes",
+      function: "The primary organs of respiration, housing the airways and air sacs. The right lung has three lobes, while the left lung has two lobes to accommodate the heart.",
+      clinical: "COPD and emphysema destroy the elastic recoil of lung tissue. Without elasticity, the lungs cannot contract easily to push air out, leading to stale air being trapped in the chest.",
+      tip: "Practice spirometry daily and perform moderate aerobic exercise to improve lung tissue compliance and stretch your accessory breathing muscles.",
+      colorClass: "text-rose-600 bg-rose-50 border-rose-100",
+      icon: <Heart className="w-5 h-5 text-rose-600" />,
+    },
+    alveoli: {
+      title: "Alveoli (Gas Exchange)",
+      function: "Millions of microscopic bubble-like sacs where gas exchange occurs. Oxygen passes through their single-cell walls into capillaries, while carbon dioxide enters the lungs to be exhaled.",
+      clinical: "Pneumonia causes these sacs to fill with inflammatory fluid, blocking oxygen intake. Emphysema permanently ruptures and merges alveoli, reducing the surface area for gas transfer.",
+      tip: "Avoid vaping, smoking, and secondhand smoke. Toxic particles cause irreversible macrophage damage in the alveoli, leading to permanent loss of breathing surface area.",
+      colorClass: "text-purple-600 bg-purple-50 border-purple-100",
+      icon: <ShieldAlert className="w-5 h-5 text-purple-600" />,
+    },
+    diaphragm: {
+      title: "Diaphragm Muscle",
+      function: "A dome-shaped muscle located below the lungs. Contracting flattens the muscle to pull air into the lungs, and relaxing pushes the air back out.",
+      clinical: "In severe COPD, trapped air hyperinflates the lungs, pushing the diaphragm flat. A flattened diaphragm cannot contract effectively, causing breathing to become exhausting.",
+      tip: "Practice diaphragmatic breathing (belly breathing). Place one hand on your stomach, inhale slowly, and ensure your stomach rises while your chest remains still.",
+      colorClass: "text-emerald-600 bg-emerald-50 border-emerald-100",
+      icon: <CheckCircle className="w-5 h-5 text-emerald-600" />,
+    },
+  };
+
   // --- 🌤️ LIVE AQI LOGIC ---
   const [defaultCities, setDefaultCities] = React.useState<AqiData[]>([
     { city: "Dhaka", country: "Bangladesh", aqi: 0, pm2_5: 0, pm10: 0, loading: true, error: false },
@@ -609,6 +664,512 @@ export default function EducationPage() {
               );
             })}
           </div>
+        </div>
+
+      </motion.section>
+
+      {/* 🫁 INTERACTIVE RESPIRATORY ANATOMY EXPLORER */}
+      <motion.section whileHover={{ y: -3 }} className="bg-white rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden flex flex-col gap-8"
+        style={{ border: '1px solid rgba(27,45,107,0.05)', boxShadow: '0 10px 40px -10px rgba(27,45,107,0.15), 0 0 0 1px rgba(27,45,107,0.05)' }}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.03),transparent)] pointer-events-none" />
+        
+        {/* Section Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10 text-left">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2] text-xs font-semibold border border-[#0891b2]/15">
+                Anatomy Hub
+              </span>
+              <span className="text-xs text-[#64748B] flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 text-[#0891b2]" />
+                Interactive Pulmonology Model
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-[#1B2D6B] flex items-center gap-2">
+              Interactive Respiratory Anatomy Explorer
+            </h2>
+          </div>
+        </div>
+
+        {/* Explorer Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10">
+          
+          {/* Column 1: Interactive SVG Lung Model */}
+          <div className="lg:col-span-6 bg-slate-50/50 border border-slate-100 p-4 md:p-6 rounded-[2rem] flex flex-col items-center justify-center relative overflow-hidden min-h-[450px]">
+            {/* Ambient Background Gradient for Lungs */}
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-teal-50/10 pointer-events-none" />
+            
+            {/* SVG Illustration */}
+            <svg 
+              viewBox="0 0 400 420" 
+              className="w-full max-w-[380px] h-auto drop-shadow-[0_10px_20px_rgba(27,45,107,0.05)]"
+            >
+              <defs>
+                {/* Lungs Gradient */}
+                <linearGradient id="lungs-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#e11d48" stopOpacity="0.15" />
+                </linearGradient>
+                <linearGradient id="lungs-gradient-hover" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.75" />
+                  <stop offset="100%" stopColor="#e11d48" stopOpacity="0.4" />
+                </linearGradient>
+                <linearGradient id="lungs-gradient-active" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#e11d48" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#be123c" stopOpacity="0.6" />
+                </linearGradient>
+                
+                {/* Airflow Glow */}
+                <filter id="glow-effect" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+
+              {/* 1. DIAPHRAGM (Bottom curved band) */}
+              <g 
+                onClick={() => setSelectedRegion('diaphragm')}
+                onMouseEnter={() => setHoveredRegion('diaphragm')}
+                onMouseLeave={() => setHoveredRegion(null)}
+                className="cursor-pointer"
+              >
+                {/* Base Thick Path */}
+                <path 
+                  d="M 60 360 Q 200 325 340 360" 
+                  fill="none" 
+                  stroke={selectedRegion === 'diaphragm' ? '#10b981' : hoveredRegion === 'diaphragm' ? '#34d399' : '#cbd5e1'} 
+                  strokeWidth="16" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                {/* Inner accent line */}
+                <path 
+                  d="M 60 360 Q 200 325 340 360" 
+                  fill="none" 
+                  stroke={selectedRegion === 'diaphragm' ? '#047857' : '#94a3b8'} 
+                  strokeWidth="4" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300 opacity-60"
+                />
+                {/* Wider invisible path for easy clicking */}
+                <path 
+                  d="M 60 360 Q 200 325 340 360" 
+                  fill="none" 
+                  stroke="transparent" 
+                  strokeWidth="32" 
+                  strokeLinecap="round"
+                />
+              </g>
+
+              {/* 2. LUNG LOBES (Background shape for lungs) */}
+              <g>
+                {/* RIGHT LUNG (Anatomical Left - Viewer's Right) */}
+                <path 
+                  d="M 205 130 C 215 110, 275 100, 295 135 C 320 175, 320 280, 285 315 C 255 345, 215 315, 205 295 C 192 270, 198 175, 205 130 Z"
+                  fill="url(#lungs-gradient)"
+                  stroke={selectedRegion === 'lungs' ? '#e11d48' : hoveredRegion === 'lungs' ? '#fda4af' : 'transparent'}
+                  strokeWidth="3"
+                  className="transition-all duration-300 cursor-pointer"
+                  style={{
+                    fill: selectedRegion === 'lungs' 
+                      ? 'url(#lungs-gradient-active)' 
+                      : hoveredRegion === 'lungs' 
+                      ? 'url(#lungs-gradient-hover)' 
+                      : 'url(#lungs-gradient)'
+                  }}
+                  onClick={() => setSelectedRegion('lungs')}
+                  onMouseEnter={() => setHoveredRegion('lungs')}
+                  onMouseLeave={() => setHoveredRegion(null)}
+                />
+                
+                {/* LEFT LUNG (Anatomical Right - Viewer's Left) */}
+                <path 
+                  d="M 195 130 C 185 110, 125 100, 105 135 C 80 175, 80 280, 115 315 C 145 345, 185 315, 195 295 C 208 270, 202 175, 195 130 Z"
+                  fill="url(#lungs-gradient)"
+                  stroke={selectedRegion === 'lungs' ? '#e11d48' : hoveredRegion === 'lungs' ? '#fda4af' : 'transparent'}
+                  strokeWidth="3"
+                  className="transition-all duration-300 cursor-pointer"
+                  style={{
+                    fill: selectedRegion === 'lungs' 
+                      ? 'url(#lungs-gradient-active)' 
+                      : hoveredRegion === 'lungs' 
+                      ? 'url(#lungs-gradient-hover)' 
+                      : 'url(#lungs-gradient)'
+                  }}
+                  onClick={() => setSelectedRegion('lungs')}
+                  onMouseEnter={() => setHoveredRegion('lungs')}
+                  onMouseLeave={() => setHoveredRegion(null)}
+                />
+              </g>
+
+              {/* 3. BRONCHIAL TREE (Branching lines inside the lungs) */}
+              <g 
+                onClick={() => setSelectedRegion('bronchi')}
+                onMouseEnter={() => setHoveredRegion('bronchi')}
+                onMouseLeave={() => setHoveredRegion(null)}
+                className="cursor-pointer"
+              >
+                {/* Left primary bronchus & sub-branches */}
+                <path 
+                  d="M 200 135 Q 185 150 160 165" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#475569'} 
+                  strokeWidth="8" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 160 165 Q 140 185 130 215" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#64748B'} 
+                  strokeWidth="5" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 160 165 Q 155 170 148 185" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#64748B'} 
+                  strokeWidth="4" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 130 215 Q 120 230 115 250" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#94a3b8'} 
+                  strokeWidth="3" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 130 215 Q 135 230 145 255" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#94a3b8'} 
+                  strokeWidth="3" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+
+                {/* Right primary bronchus & sub-branches */}
+                <path 
+                  d="M 200 135 Q 215 150 240 165" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#475569'} 
+                  strokeWidth="8" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 240 165 Q 260 185 270 215" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#64748B'} 
+                  strokeWidth="5" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 240 165 Q 245 170 252 185" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#64748B'} 
+                  strokeWidth="4" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 270 215 Q 280 230 285 250" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#94a3b8'} 
+                  strokeWidth="3" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+                <path 
+                  d="M 270 215 Q 265 230 255 255" 
+                  fill="none" 
+                  stroke={selectedRegion === 'bronchi' ? '#0891b2' : hoveredRegion === 'bronchi' ? '#22d3ee' : '#94a3b8'} 
+                  strokeWidth="3" 
+                  strokeLinecap="round"
+                  className="transition-colors duration-300"
+                />
+              </g>
+
+              {/* 4. TRACHEA (Windpipe) */}
+              <g 
+                onClick={() => setSelectedRegion('trachea')}
+                onMouseEnter={() => setHoveredRegion('trachea')}
+                onMouseLeave={() => setHoveredRegion(null)}
+                className="cursor-pointer"
+              >
+                {/* Trachea Tube Base */}
+                <rect 
+                  x="186" 
+                  y="30" 
+                  width="28" 
+                  height="105" 
+                  rx="4"
+                  fill={selectedRegion === 'trachea' ? '#dbeafe' : hoveredRegion === 'trachea' ? '#eff6ff' : '#f1f5f9'}
+                  stroke={selectedRegion === 'trachea' ? '#2563EB' : hoveredRegion === 'trachea' ? '#60a5fa' : '#94a3b8'}
+                  strokeWidth="3"
+                  className="transition-all duration-300"
+                />
+                
+                {/* Rib lines representing cartilage rings */}
+                {[42, 54, 66, 78, 90, 102, 114, 126].map((yVal) => (
+                  <line 
+                    key={yVal}
+                    x1="190" 
+                    y1={yVal} 
+                    x2="210" 
+                    y2={yVal} 
+                    stroke={selectedRegion === 'trachea' ? '#2563EB' : hoveredRegion === 'trachea' ? '#60a5fa' : '#cbd5e1'}
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    className="transition-colors duration-300"
+                  />
+                ))}
+              </g>
+
+              {/* 5. ALVEOLI CALLOUT MAGNIFIER */}
+              <g 
+                onClick={() => setSelectedRegion('alveoli')}
+                onMouseEnter={() => setHoveredRegion('alveoli')}
+                onMouseLeave={() => setHoveredRegion(null)}
+                className="cursor-pointer"
+              >
+                {/* Pointer dotted line from bronchus tip to magnifier */}
+                <line 
+                  x1="125" 
+                  y1="250" 
+                  x2="80" 
+                  y2="105" 
+                  stroke="#94a3b8" 
+                  strokeWidth="2" 
+                  strokeDasharray="4 4" 
+                />
+
+                {/* Magnifier Circle Outline */}
+                <circle 
+                  cx="80" 
+                  cy="90" 
+                  r="35" 
+                  fill="white"
+                  stroke={selectedRegion === 'alveoli' ? '#9333ea' : hoveredRegion === 'alveoli' ? '#c084fc' : '#cbd5e1'}
+                  strokeWidth={selectedRegion === 'alveoli' ? '3' : '2'}
+                  className="transition-all duration-300"
+                />
+                
+                {/* Magnified Alveoli Clusters (tiny bubble circles) */}
+                <g opacity="0.8">
+                  {/* Stem */}
+                  <path d="M 80 115 Q 80 100 75 90" fill="none" stroke="#64748B" strokeWidth="3" />
+                  <path d="M 75 90 Q 68 85 64 80" fill="none" stroke="#64748B" strokeWidth="2" />
+                  <path d="M 75 90 Q 82 82 86 76" fill="none" stroke="#64748B" strokeWidth="2" />
+
+                  {/* Bubble groups */}
+                  <circle cx="62" cy="76" r="6" fill="#a5b4fc" stroke="#4f46e5" strokeWidth="1" />
+                  <circle cx="68" cy="72" r="5.5" fill="#a5b4fc" stroke="#4f46e5" strokeWidth="1" />
+                  <circle cx="58" cy="84" r="5" fill="#a5b4fc" stroke="#4f46e5" strokeWidth="1" />
+                  
+                  <circle cx="86" cy="72" r="6" fill="#c084fc" stroke="#7c3aed" strokeWidth="1" />
+                  <circle cx="92" cy="76" r="5.5" fill="#c084fc" stroke="#7c3aed" strokeWidth="1" />
+                  <circle cx="80" cy="68" r="5" fill="#c084fc" stroke="#7c3aed" strokeWidth="1" />
+
+                  <circle cx="72" cy="90" r="6.5" fill="#cbd5e1" stroke="#475569" strokeWidth="1" />
+                  <circle cx="78" cy="94" r="5.5" fill="#cbd5e1" stroke="#475569" strokeWidth="1" />
+                </g>
+                
+                {/* Small magnifying glass badge tag */}
+                <circle cx="106" cy="115" r="9" fill="#1B2D6B" />
+                <path d="M 103 112 L 109 118 M 107 114 A 2 2 0 1 1 103 110 A 2 2 0 1 1 107 114 Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+              </g>
+
+              {/* 🌊 SIMULATED AIRFLOW ANIMATED PARTICLES */}
+              {/* Oxygen Particles traveling down the bronchial tree paths */}
+              {[
+                // Path Left Main
+                { path: "M 200 45 L 200 135 Q 185 150 160 165 Q 140 185 130 215 Q 120 230 115 250", delay: "0s" },
+                { path: "M 200 45 L 200 135 Q 185 150 160 165 Q 140 185 130 215 Q 120 230 115 250", delay: "0.8s" },
+                { path: "M 200 45 L 200 135 Q 185 150 160 165 Q 140 185 130 215 Q 120 230 115 250", delay: "1.6s" },
+
+                // Path Left Upper
+                { path: "M 200 45 L 200 135 Q 185 150 160 165 Q 155 170 148 185", delay: "0.4s" },
+                { path: "M 200 45 L 200 135 Q 185 150 160 165 Q 155 170 148 185", delay: "1.2s" },
+
+                // Path Right Main
+                { path: "M 200 45 L 200 135 Q 215 150 240 165 Q 260 185 270 215 Q 280 230 285 250", delay: "0.2s" },
+                { path: "M 200 45 L 200 135 Q 215 150 240 165 Q 260 185 270 215 Q 280 230 285 250", delay: "1.0s" },
+                { path: "M 200 45 L 200 135 Q 215 150 240 165 Q 260 185 270 215 Q 280 230 285 250", delay: "1.8s" },
+
+                // Path Right Upper
+                { path: "M 200 45 L 200 135 Q 215 150 240 165 Q 245 170 252 185", delay: "0.6s" },
+                { path: "M 200 45 L 200 135 Q 215 150 240 165 Q 245 170 252 185", delay: "1.4s" }
+              ].map((particle, pIdx) => {
+                const durationVal = (3.5 - simulatedCapacity * 3).toFixed(2);
+                return (
+                  <circle 
+                    key={pIdx} 
+                    r="3.5" 
+                    fill="#38bdf8" 
+                    opacity="0.85" 
+                    filter="url(#glow-effect)"
+                  >
+                    <animateMotion
+                      path={particle.path}
+                      dur={`${durationVal}s`}
+                      repeatCount="indefinite"
+                      begin={particle.delay}
+                    />
+                  </circle>
+                );
+              })}
+            </svg>
+
+            {/* SVG Instructions overlay */}
+            <div className="absolute bottom-4 left-4 right-4 flex justify-between text-[10px] font-bold text-[#64748B] uppercase tracking-wider bg-white/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-100 shadow-sm pointer-events-none">
+              <span>Interactive Model</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-[#38bdf8] rounded-full animate-ping" />
+                Airflow speed: {(simulatedCapacity * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Column 2: Contextual Details Card */}
+          <div className="lg:col-span-6 flex flex-col">
+            <AnimatePresence mode="wait">
+              {selectedRegion ? (
+                (() => {
+                  const data = regionData[selectedRegion];
+                  return (
+                    <motion.div
+                      key={selectedRegion}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ duration: 0.25 }}
+                      className="bg-slate-50/50 border border-slate-100 p-6 md:p-8 rounded-[2rem] flex flex-col justify-between h-full text-left gap-6 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-5">
+                        {/* Title & Badge */}
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-white rounded-xl shadow-sm">
+                              {data.icon}
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-black text-[#1B2D6B]">{data.title}</h3>
+                              <span className="text-[10px] font-black uppercase text-[#64748B] tracking-widest block mt-0.5">Selected Region</span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setSelectedRegion(null)}
+                            className="p-1.5 hover:bg-slate-200/50 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Physiological Function */}
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs font-black uppercase text-[#64748B] tracking-wider">Physiological Role</span>
+                          <p className="text-sm text-[#1B2D6B] leading-relaxed font-medium">
+                            {data.function}
+                          </p>
+                        </div>
+
+                        {/* Clinical Relevance */}
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs font-black uppercase text-rose-600 tracking-wider">Clinical Relevance (COPD & Asthma)</span>
+                          <p className="text-xs text-[#64748B] leading-relaxed font-medium">
+                            {data.clinical}
+                          </p>
+                        </div>
+
+                        {/* Pulmonologist Self-Care Tip */}
+                        <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex gap-3 items-start">
+                          <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-xs font-bold text-emerald-800 block">Self-Care Therapy Tip</span>
+                            <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
+                              {data.tip}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Airflow Simulation Slider Widget */}
+                      <div className="border-t border-slate-100 pt-5 mt-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Simulate Airflow Blockage</span>
+                          <span className="text-xs font-black text-[#2563EB]">
+                            {simulatedCapacity === 1.0 
+                              ? "Healthy Lungs (100%)" 
+                              : simulatedCapacity >= 0.7 
+                              ? `Mild Obstruction (${(simulatedCapacity * 100).toFixed(0)}%)`
+                              : simulatedCapacity >= 0.4
+                              ? `Moderate Obstruction (${(simulatedCapacity * 100).toFixed(0)}%)`
+                              : `Severe Obstruction (${(simulatedCapacity * 100).toFixed(0)}%)`
+                            }
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">COPD</span>
+                          <input 
+                            type="range"
+                            min="0.2"
+                            max="1.0"
+                            step="0.05"
+                            value={simulatedCapacity}
+                            onChange={(e) => setSimulatedCapacity(parseFloat(e.target.value))}
+                            className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#2563EB]"
+                          />
+                          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Healthy</span>
+                        </div>
+                      </div>
+
+                    </motion.div>
+                  );
+                })()
+              ) : (
+                <motion.div
+                  key="onboarding"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="bg-slate-50 border border-slate-100 p-8 rounded-[2rem] text-center flex flex-col items-center justify-center gap-4 h-full relative overflow-hidden py-16 shadow-inner"
+                >
+                  <div className="p-4 bg-white rounded-2xl shadow-md border border-slate-100 text-[#2563EB] animate-pulse">
+                    <BookOpen className="w-8 h-8" />
+                  </div>
+                  <h4 className="font-black text-[#1B2D6B] text-lg">Anatomy Exploration Deck</h4>
+                  <p className="text-xs text-[#64748B] max-w-sm leading-relaxed">
+                    Click on any highlighted structure on the left (such as the **Trachea**, **Bronchial Tree**, **Lung Lobes**, **Alveoli Callout**, or **Diaphragm**) to inspect its functions, disease impacts, and self-care tips.
+                  </p>
+                  <div className="flex gap-2 mt-2 flex-wrap justify-center">
+                    {['Trachea', 'Bronchi', 'Lungs', 'Alveoli', 'Diaphragm'].map((n, i) => (
+                      <span key={i} className="text-[10px] font-bold bg-white text-[#1B2D6B] border border-slate-200 px-2.5 py-1 rounded-full shadow-sm hover:border-[#2563EB] hover:text-[#2563EB] transition-colors cursor-pointer"
+                        onClick={() => {
+                          const mapping: Record<string, string> = {
+                            Trachea: 'trachea',
+                            Bronchi: 'bronchi',
+                            Lungs: 'lungs',
+                            Alveoli: 'alveoli',
+                            Diaphragm: 'diaphragm'
+                          };
+                          setSelectedRegion(mapping[n]);
+                        }}
+                      >
+                        {n}
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
         </div>
 
       </motion.section>
