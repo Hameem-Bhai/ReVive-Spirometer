@@ -304,11 +304,13 @@ export default function DashboardPage() {
 
   // Style helpers
   const cardStyle = {
-    background: isDark ? "rgba(255,255,255,0.03)" : "#FFFFFF",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.07)"}`,
+    background: isDark ? "rgba(15, 23, 42, 0.45)" : "rgba(255, 255, 255, 0.45)",
+    backdropFilter: "blur(20px) saturate(190%)",
+    WebkitBackdropFilter: "blur(20px) saturate(190%)",
+    border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.35)"}`,
     boxShadow: isDark 
-      ? "0 2px 4px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 24px 48px rgba(0,0,0,0.25)" 
-      : "0 2px 4px rgba(27,45,107,0.04), 0 8px 32px rgba(27,45,107,0.07), 0 24px 48px rgba(27,45,107,0.04)",
+      ? "0 8px 32px 0 rgba(0, 0, 0, 0.37)" 
+      : "0 8px 32px 0 rgba(31, 38, 135, 0.04)",
   };
   const textPrimary = isDark ? "white" : "#0F172A";
   const textMuted = isDark ? "#475569" : "#64748B";

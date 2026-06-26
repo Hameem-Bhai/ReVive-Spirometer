@@ -244,9 +244,7 @@ export default function ProfilePage() {
 
       {/* ── Profile Info ─────────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }}
-        whileHover={{ y: -3 }}
-        className="p-6 rounded-[1.5rem] flex flex-col gap-5 bg-white"
-        style={{ border: "1px solid rgba(27,45,107,0.07)", boxShadow: "0 2px 4px rgba(27,45,107,0.04), 0 8px 32px rgba(27,45,107,0.07), 0 24px 64px rgba(27,45,107,0.04)" }}
+        className="p-6 rounded-[1.5rem] flex flex-col gap-5 glass-card glass-card-hover"
       >
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#2563EB]/5 border border-[#2563EB]/10">
@@ -306,9 +304,7 @@ export default function ProfilePage() {
 
       {/* ── Test Reminders ───────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.16 }}
-        whileHover={{ y: -3 }}
-        className="p-6 rounded-[1.5rem] flex flex-col gap-5 bg-white"
-        style={{ border: "1px solid rgba(27,45,107,0.07)", boxShadow: "0 2px 4px rgba(27,45,107,0.04), 0 8px 32px rgba(27,45,107,0.07), 0 24px 64px rgba(27,45,107,0.04)" }}
+        className="p-6 rounded-[1.5rem] flex flex-col gap-5 glass-card glass-card-hover"
       >
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#2563EB]/5 border border-[#2563EB]/10">
@@ -383,9 +379,7 @@ export default function ProfilePage() {
 
       {/* ── Test History Management ───────────────────── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.24 }}
-        whileHover={{ y: -3 }}
-        className="p-6 rounded-[1.5rem] flex flex-col gap-4 bg-white"
-        style={{ border: "1px solid rgba(27,45,107,0.07)", boxShadow: "0 2px 4px rgba(27,45,107,0.04), 0 8px 32px rgba(27,45,107,0.07), 0 24px 64px rgba(27,45,107,0.04)" }}
+        className="p-6 rounded-[1.5rem] flex flex-col gap-4 glass-card glass-card-hover"
       >
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#059669]/5 border border-[#059669]/10">
@@ -427,9 +421,7 @@ export default function ProfilePage() {
 
       {/* ── Emergency Respiratory Passport ───────────── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.32 }}
-        whileHover={{ y: -3 }}
-        className="p-6 rounded-[1.5rem] flex flex-col gap-6 bg-white print:p-0 print:border-none print:shadow-none"
-        style={{ border: "1px solid rgba(27,45,107,0.07)", boxShadow: "0 2px 4px rgba(27,45,107,0.04), 0 8px 32px rgba(27,45,107,0.07), 0 24px 64px rgba(27,45,107,0.04)" }}
+        className="p-6 rounded-[1.5rem] flex flex-col gap-6 glass-card glass-card-hover print:p-0 print:border-none print:shadow-none"
       >
         <style>{`
           @media print {

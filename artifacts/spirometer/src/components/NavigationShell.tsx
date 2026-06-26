@@ -46,13 +46,14 @@ export default function NavigationShell({ children }: NavigationShellProps) {
 
   return (
     <div className="min-h-screen font-sans flex flex-col relative overflow-hidden" style={{ background: appBg }}>
-      {/* Background layered gradient orbs */}
-      <div className="absolute inset-0 bg-dots opacity-30 pointer-events-none z-0" />
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full pointer-events-none z-0 opacity-30"
-        style={{ background: isDark ? "radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)" : "radial-gradient(circle, rgba(37,99,235,0.07) 0%, transparent 70%)", filter: "blur(40px)" }} />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full pointer-events-none z-0 opacity-20"
-        style={{ background: isDark ? "radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%)" : "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)", filter: "blur(60px)" }} />
-      <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-[#F0F4FF]/20 to-[#F0F4FF]/60 pointer-events-none z-0" />
+      {/* Background animated mesh gradient orbs */}
+      <div className="absolute inset-0 bg-dots opacity-[0.15] pointer-events-none z-0" />
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 opacity-[0.25] blur-[80px] animate-blob-1"
+        style={{ background: "radial-gradient(circle, #3b82f6 0%, #a855f7 70%)" }} />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0 opacity-[0.2] blur-[100px] animate-blob-2"
+        style={{ background: "radial-gradient(circle, #10b981 0%, #6366f1 70%)" }} />
+      <div className="absolute top-[30%] right-[20%] w-[400px] h-[400px] rounded-full pointer-events-none z-0 opacity-[0.15] blur-[90px] animate-blob-3"
+        style={{ background: "radial-gradient(circle, #ec4899 0%, #f43f5e 70%)" }} />
       
       {/* ────────── TOP STICKY HEADER (PC & Mobile) ────────── */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl print:hidden"
