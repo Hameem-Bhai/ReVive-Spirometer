@@ -41,11 +41,14 @@ const CustomTooltip = ({ active, payload, label, isDark }: any) => {
         boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.5)" : "0 8px 32px rgba(27,45,107,0.12)"
       }}>
         <p style={{ color: isDark ? "#94a3b8" : "#1B2D6B", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{label}</p>
-        {payload.map((entry: any, i: number) => (
-          <p key={i} style={{ color: entry.color, fontSize: "13px", fontWeight: 700, margin: "2px 0" }}>
-            {entry.name}: <span style={{ color: isDark ? "white" : "#0F172A" }}>{entry.value}{entry.name?.includes("Ratio") ? "%" : entry.name?.includes("AQI") ? "" : "L"}</span>
-          </p>
-        ))}
+        {payload.map((entry: any, i: number) => {
+          const val = entry.name === "Active Triggers" ? entry.payload.triggerCount : entry.value;
+          return (
+            <p key={i} style={{ color: entry.color, fontSize: "13px", fontWeight: 700, margin: "2px 0" }}>
+              {entry.name}: <span style={{ color: isDark ? "white" : "#0F172A" }}>{val}{entry.name?.includes("Ratio") ? "%" : (entry.name?.includes("AQI") || entry.name?.includes("Triggers")) ? "" : "L"}</span>
+            </p>
+          );
+        })}
       </div>
     );
   }
@@ -79,16 +82,72 @@ export default function DashboardPage() {
   const [meds, setMeds] = React.useState(false);
   const [celebrationShown, setCelebrationShown] = React.useState(false);
 
+  // 🗓️ TRIGGER DIARY STATE
+  const [activeTriggers, setActiveTriggers] = React.useState<string[]>(() => {
+    try {
+      const today = new Date().toDateString();
+      const saved = localStorage.getItem(`revive_triggers_${today}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const TRIGGER_LIST = [
+    { id: 'pollen', label: 'Pollen', emoji: '🌾' },
+    { id: 'dust', label: 'Dust', emoji: '💨' },
+    { id: 'exercise', label: 'Exercise', emoji: '🏃' },
+    { id: 'cold', label: 'Cold Air', emoji: '❄️' },
+    { id: 'smoke', label: 'Smoke', emoji: '🚬' },
+    { id: 'stress', label: 'Stress', emoji: '😰' },
+  ];
+
+  const toggleTrigger = (id: string) => {
+    setActiveTriggers(prev => {
+      const next = prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id];
+      const today = new Date().toDateString();
+      localStorage.setItem(`revive_triggers_${today}`, JSON.stringify(next));
+      return next;
+    });
+  };
+
   const history = React.useMemo(() => loadHistory(), []);
   const profile = React.useMemo(() => loadProfile(), []);
   const stats = React.useMemo(() => getHistoryStats(history), [history]);
   const gamStats = React.useMemo(() => getGamificationStats(), []);
 
   const isDemo = history.length === 0;
-  const chartData = React.useMemo(
-    () => isDemo ? DEMO_DATA : getHistoryChartData(history).map(d => ({ ...d, aqi: null })),
-    [history, isDemo]
-  );
+  const chartData = React.useMemo(() => {
+    if (isDemo) {
+      return DEMO_DATA.map(d => {
+        const count = d.aqi ? (d.aqi > 100 ? 3 : d.aqi > 60 ? 1 : 0) : 0;
+        return {
+          ...d,
+          triggerCount: count,
+          triggerDisplay: count * 20
+        };
+      });
+    }
+    return getHistoryChartData(history).map(d => {
+      const match = history.find(r => 
+        new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) === d.date
+      );
+      let count = 0;
+      if (match) {
+        try {
+          const dateStr = new Date(match.date).toDateString();
+          const saved = localStorage.getItem(`revive_triggers_${dateStr}`);
+          if (saved) {
+            count = JSON.parse(saved).length;
+          }
+        } catch {}
+      }
+      return {
+        ...d,
+        aqi: null,
+        triggerCount: count,
+        triggerDisplay: count * 20
+      };
+    });
+  }, [history, isDemo]);
 
   // Community goal (simulated local counter, increments daily)
   const communityBreaths = React.useMemo(() => {
@@ -232,6 +291,16 @@ export default function DashboardPage() {
 
   const getAqiColor = (aqi: number) => aqi <= 50 ? "#059669" : aqi <= 100 ? "#f59e0b" : aqi <= 150 ? "#f97316" : aqi <= 200 ? "#ef4444" : "#a855f7";
   const getAqiLabel = (aqi: number) => aqi <= 50 ? "Good" : aqi <= 100 ? "Moderate" : aqi <= 150 ? "Sensitive Groups" : aqi <= 200 ? "Unhealthy" : "Very Unhealthy";
+
+  // 🌡️ RESPIRATORY RISK SCORE
+  const getRiskScore = (aqi: number | null, triggerCount: number): { level: string; color: string; bg: string; border: string; advice: string } => {
+    const base = aqi === null ? 0 : aqi <= 50 ? 0 : aqi <= 100 ? 1 : aqi <= 150 ? 2 : 3;
+    const total = base + triggerCount;
+    if (total >= 4) return { level: 'High Risk', color: '#ef4444', bg: 'rgba(239,68,68,0.05)', border: 'rgba(239,68,68,0.2)', advice: 'Stay indoors. Carry your rescue inhaler. Avoid exercise.' };
+    if (total >= 2) return { level: 'Moderate Risk', color: '#f59e0b', bg: 'rgba(245,158,11,0.05)', border: 'rgba(245,158,11,0.2)', advice: 'Limit strenuous outdoor activity. Monitor symptoms closely.' };
+    return { level: 'Low Risk', color: '#059669', bg: 'rgba(5,150,105,0.05)', border: 'rgba(5,150,105,0.2)', advice: 'Safe for outdoor breathing exercises. Great day for therapy!' };
+  };
+  const riskScore = getRiskScore(aqiState.aqi, activeTriggers.length);
 
   // Style helpers
   const cardStyle = {
@@ -909,6 +978,28 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
+
+          {/* 🌡️ RESPIRATORY RISK SCORE CARD */}
+          {aqiState.aqi !== null && (
+            <div className="flex items-center gap-3 p-3.5 rounded-2xl border transition-all"
+              style={{ background: riskScore.bg, borderColor: riskScore.border }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${riskScore.color}15`, border: `1px solid ${riskScore.color}30` }}>
+                <AlertTriangle className="w-4 h-4" style={{ color: riskScore.color }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black" style={{ color: riskScore.color }}>Daily Respiratory Risk: {riskScore.level}</span>
+                  {activeTriggers.length > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${riskScore.color}15`, color: riskScore.color }}>
+                      {activeTriggers.length} trigger{activeTriggers.length > 1 ? 's' : ''} logged
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs mt-0.5" style={{ color: isDark ? '#94a3b8' : '#475569' }}>{riskScore.advice}</p>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -976,12 +1067,14 @@ export default function DashboardPage() {
                 <Line yAxisId="left" name="FEV1 (L)" type="monotone" dataKey="fev1"
                   stroke="#059669" strokeWidth={2} dot={{ r: 3, fill: "#059669", strokeWidth: 0 }} strokeDasharray="5 3" />
                 {isDemo && <Bar yAxisId="right" name="AQI" dataKey="aqi" fill="rgba(245,158,11,0.15)" radius={[4,4,0,0]} />}
+                <Line yAxisId="right" name="Active Triggers" type="monotone" dataKey="triggerDisplay"
+                  stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3.5, fill: "#F59E0B" }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
-        {/* Symptom Logger */}
+        {/* Symptom & Trigger Diary */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }}
           whileHover={{ y: -3 }}
           className="lg:col-span-4 p-6 rounded-2xl flex flex-col gap-4"
@@ -992,8 +1085,35 @@ export default function DashboardPage() {
               <Activity className="w-3.5 h-3.5" style={{ color: "#1B2D6B" }} />
             </div>
             <div>
-              <h3 className="text-sm font-black" style={{ color: textPrimary }}>Symptom Logger</h3>
-              <p className="text-[10px]" style={{ color: textMuted }}>Log daily warning signs</p>
+              <h3 className="text-sm font-black" style={{ color: textPrimary }}>Symptom & Trigger Diary</h3>
+              <p className="text-[10px]" style={{ color: textMuted }}>Log symptoms and daily triggers</p>
+            </div>
+          </div>
+
+          {/* Environmental Triggers */}
+          <div className="flex flex-col gap-2 text-left">
+            <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: textSub }}>Today's Triggers</label>
+            <div className="flex flex-wrap gap-2">
+              {TRIGGER_LIST.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => toggleTrigger(t.id)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer"
+                  style={activeTriggers.includes(t.id) ? {
+                    background: 'rgba(239,68,68,0.08)',
+                    borderColor: 'rgba(239,68,68,0.3)',
+                    color: '#ef4444'
+                  } : {
+                    background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(27,45,107,0.03)',
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(27,45,107,0.1)',
+                    color: textMuted
+                  }}
+                >
+                  <span>{t.emoji}</span> {t.label}
+                  {activeTriggers.includes(t.id) && <span className="w-1.5 h-1.5 rounded-full bg-red-400" />}
+                </button>
+              ))}
             </div>
           </div>
 

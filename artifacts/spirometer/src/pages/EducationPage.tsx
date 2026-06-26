@@ -295,6 +295,42 @@ export default function EducationPage() {
   const [breathPhase, setBreathPhase] = React.useState<"inhale" | "hold" | "exhale">("inhale");
   const [phaseTimeLeft, setPhaseTimeLeft] = React.useState(4);
 
+  // --- 🎮 GAMIFIED TRAINER: Web Audio ---
+  const [audioEnabled, setAudioEnabled] = React.useState(false);
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+  const oscillatorRef = React.useRef<OscillatorNode | null>(null);
+  const gainNodeRef = React.useRef<GainNode | null>(null);
+
+  // --- 🎮 GAMIFIED TRAINER: Session tracking ---
+  const [sessionsToday, setSessionsToday] = React.useState(() => {
+    const key = `revive_breathing_${new Date().toDateString()}`;
+    return parseInt(localStorage.getItem(key) || '0', 10);
+  });
+  const [totalSessions, setTotalSessions] = React.useState(() => {
+    return parseInt(localStorage.getItem('revive_breathing_total') || '0', 10);
+  });
+  const [cycleCount, setCycleCount] = React.useState(0);
+
+  // --- 🎮 GAMIFIED TRAINER: Cycle complete handler ---
+  const handleCycleComplete = React.useCallback(() => {
+    setCycleCount(prev => {
+      const next = prev + 1;
+      if (next >= 3) {
+        // Count as one session
+        const today = new Date().toDateString();
+        const key = `revive_breathing_${today}`;
+        const cur = parseInt(localStorage.getItem(key) || '0', 10);
+        const newVal = cur + 1;
+        localStorage.setItem(key, String(newVal));
+        localStorage.setItem('revive_breathing_total', String(parseInt(localStorage.getItem('revive_breathing_total') || '0', 10) + 1));
+        setSessionsToday(newVal);
+        setTotalSessions(prev2 => prev2 + 1);
+        return 0;
+      }
+      return next;
+    });
+  }, []);
+
   // Core breath exercise ticking interval
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -305,6 +341,8 @@ export default function EducationPage() {
               setBreathPhase("exhale");
               return 4;
             } else {
+              // exhale completed → full cycle done
+              handleCycleComplete();
               setBreathPhase("inhale");
               return 4;
             }
@@ -316,6 +354,8 @@ export default function EducationPage() {
               setBreathPhase("exhale");
               return 8;
             } else {
+              // exhale completed → full cycle done
+              handleCycleComplete();
               setBreathPhase("inhale");
               return 4;
             }
@@ -326,13 +366,51 @@ export default function EducationPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [breathPhase, exercise]);
+  }, [breathPhase, exercise, handleCycleComplete]);
 
   // Reset phase when changing exercises
   React.useEffect(() => {
     setBreathPhase("inhale");
     setPhaseTimeLeft(4);
+    setCycleCount(0);
   }, [exercise]);
+
+  // --- 🎮 GAMIFIED TRAINER: Web Audio tone per breathPhase ---
+  React.useEffect(() => {
+    if (!audioEnabled) {
+      // Stop audio
+      if (oscillatorRef.current) {
+        try { oscillatorRef.current.stop(); } catch {}
+        oscillatorRef.current = null;
+      }
+      return;
+    }
+    // Initialize AudioContext if needed
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx = audioCtxRef.current;
+    // Stop existing oscillator
+    if (oscillatorRef.current) {
+      try { oscillatorRef.current.stop(); } catch {}
+    }
+    // Create new gain node
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.connect(ctx.destination);
+    gainNodeRef.current = gain;
+    // Create oscillator
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    const freq = breathPhase === 'inhale' ? 220 : breathPhase === 'hold' ? 180 : 280;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.connect(gain);
+    osc.start();
+    oscillatorRef.current = osc;
+    return () => {
+      try { osc.stop(); } catch {}
+    };
+  }, [audioEnabled, breathPhase]);
 
   // Coach styling properties based on phase
   const getPhaseDetails = () => {
@@ -1254,63 +1332,112 @@ export default function EducationPage() {
           </div>
         </div>
 
-        {/* Animated breathing bubble visual */}
-        <div className="lg:col-span-6 flex flex-col items-center justify-center py-8 lg:py-0 relative">
-          
-          <div className="w-72 h-72 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center relative shadow-inner">
-            
-            {/* Pulsing visual halo */}
+        {/* Animated breathing visual — SVG Lung Gauge + Session Tracker */}
+        <div className="lg:col-span-6 flex flex-col items-center justify-center gap-5 py-4 lg:py-0 relative">
+          {/* SVG Lung Expansion Gauge */}
+          <div className="relative w-64 h-64 flex items-center justify-center">
+            {/* Outer decorative ring */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 256 256">
+              <circle cx="128" cy="128" r="120" fill="none" stroke="rgba(27,45,107,0.06)" strokeWidth="8" />
+              <motion.circle
+                cx="128" cy="128" r="120"
+                fill="none"
+                stroke={coach.ringColor}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 120}`}
+                animate={{ strokeDashoffset: 2 * Math.PI * 120 * (1 - (breathPhase === 'exhale' ? 0.3 : breathPhase === 'hold' ? 0.85 : 0.7)) }}
+                transition={{ duration: breathPhase === 'inhale' ? 4 : breathPhase === 'hold' ? 0.3 : 4, ease: 'easeInOut' }}
+                style={{ transform: 'rotate(-90deg)', transformOrigin: '128px 128px' }}
+              />
+            </svg>
+
+            {/* Animated Lung Lobes */}
             <motion.div
-              animate={{
-                scale: coach.scale * 1.05,
-              }}
-              transition={{
-                duration: 1.2,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-              }}
-              style={{ borderColor: coach.ringColor }}
-              className="absolute inset-4 rounded-full border border-dashed opacity-25 pointer-events-none"
-            />
-
-            {/* Glowing bubble itself */}
-            <motion.div 
-              animate={{ 
-                scale: coach.scale 
-              }}
-              transition={{ 
-                duration: 2.2,
-                ease: "easeInOut"
-              }}
-              style={{ 
-                boxShadow: `0 0 40px ${coach.ringColor}22` 
-              }}
-              className={`absolute w-36 h-36 rounded-full bg-gradient-to-tr ${coach.bgColor} opacity-40 filter blur-sm`}
-            />
-
-            <motion.div 
-              animate={{ 
-                scale: coach.scale 
-              }}
-              transition={{ 
-                duration: 2.2,
-                ease: "easeInOut"
-              }}
-              style={{ borderColor: coach.ringColor }}
-              className="w-40 h-40 rounded-full border border-slate-200 bg-white shadow-xl flex flex-col items-center justify-center relative z-10 gap-1"
+              className="relative"
+              animate={{ scale: coach.scale }}
+              transition={{ duration: 2.2, ease: 'easeInOut' }}
             >
-              <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                {coach.title}
-              </span>
-              <span className="text-3xl font-black text-[#1B2D6B]">{phaseTimeLeft}s</span>
+              <svg viewBox="0 0 120 100" className="w-28 h-28">
+                <defs>
+                  <radialGradient id="lung-fill-l" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={coach.ringColor} stopOpacity="0.6" />
+                    <stop offset="100%" stopColor={coach.ringColor} stopOpacity="0.1" />
+                  </radialGradient>
+                  <radialGradient id="lung-fill-r" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={coach.ringColor} stopOpacity="0.6" />
+                    <stop offset="100%" stopColor={coach.ringColor} stopOpacity="0.1" />
+                  </radialGradient>
+                </defs>
+                {/* Left Lung */}
+                <path d="M 55 20 C 50 8, 20 5, 12 30 C 4 55, 8 80, 30 88 C 48 93, 55 78, 55 65 Z"
+                  fill="url(#lung-fill-l)" stroke={coach.ringColor} strokeWidth="1.5" />
+                {/* Right Lung */}
+                <path d="M 65 20 C 70 8, 100 5, 108 30 C 116 55, 112 80, 90 88 C 72 93, 65 78, 65 65 Z"
+                  fill="url(#lung-fill-r)" stroke={coach.ringColor} strokeWidth="1.5" />
+                {/* Trachea */}
+                <rect x="57" y="5" width="6" height="20" rx="3" fill={coach.ringColor} opacity="0.6" />
+              </svg>
             </motion.div>
-            
+
+            {/* Center Timer */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-4xl font-black text-[#1B2D6B]">{phaseTimeLeft}s</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5">{coach.title}</span>
+            </div>
           </div>
 
-          <span className="text-xs text-[#2563EB] font-bold tracking-wide uppercase mt-4 block">
+          {/* Instruction */}
+          <span className="text-xs text-[#2563EB] font-bold tracking-wide uppercase">
             {coach.instruction}
           </span>
+
+          {/* Audio Toggle + Session Tracker row */}
+          <div className="flex items-center gap-4 w-full justify-center">
+            <button
+              onClick={() => setAudioEnabled(v => !v)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black border transition-all ${
+                audioEnabled
+                  ? 'bg-[#1B2D6B] text-white border-[#1B2D6B] shadow-lg shadow-[#1B2D6B]/20'
+                  : 'bg-white text-[#64748B] border-slate-200 hover:border-[#1B2D6B] hover:text-[#1B2D6B]'
+              }`}
+            >
+              {audioEnabled ? '🔊' : '🔇'} {audioEnabled ? 'Zen Sweeps On' : 'Muted'}
+            </button>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-black text-[#64748B] uppercase tracking-wider">Today's Sessions</span>
+              <div className="flex gap-1 mt-1">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className={`w-5 h-5 rounded-full border-2 transition-all ${
+                    i < sessionsToday
+                      ? 'bg-emerald-500 border-emerald-500'
+                      : 'bg-transparent border-slate-200'
+                  }`} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Achievement Badges Row */}
+          {(sessionsToday >= 1 || totalSessions >= 5 || totalSessions >= 20) && (
+            <div className="flex gap-2 flex-wrap justify-center">
+              {sessionsToday >= 1 && (
+                <span className="flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700">
+                  🫁 Daily Breather
+                </span>
+              )}
+              {totalSessions >= 5 && (
+                <span className="flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
+                  💨 Wind Rider
+                </span>
+              )}
+              {totalSessions >= 20 && (
+                <span className="flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-purple-700">
+                  🏆 Diaphragm Master
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </motion.section>
 
