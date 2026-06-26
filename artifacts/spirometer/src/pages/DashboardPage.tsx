@@ -1006,18 +1006,18 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* ── Metric Cards ─────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {metrics.map((m, i) => (
           <motion.div key={m.label}
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 + i * 0.04 }}
             whileHover={{ y: -4 }}
-            className="p-5 rounded-2xl relative overflow-hidden cursor-default"
+            className="p-3.5 sm:p-5 rounded-2xl relative overflow-hidden cursor-default"
             style={{ ...cardStyle }}>
             <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none"
               style={{ background: `radial-gradient(circle, ${m.accent}15, transparent)`, filter: "blur(20px)", transform: "translate(30%,-30%)" }} />
-            <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: textSub }}>{m.label}</p>
-            <p className="text-3xl font-black mb-2" style={{ color: textPrimary, fontFamily: "'Inter', sans-serif" }}>{m.value}</p>
-            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full"
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1.5 sm:mb-2 truncate" style={{ color: textSub }}>{m.label}</p>
+            <p className="text-2xl sm:text-3xl font-black mb-1.5 sm:mb-2" style={{ color: textPrimary, fontFamily: "'Inter', sans-serif" }}>{m.value}</p>
+            <span className="text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full inline-block"
               style={{ background: `${m.badgeColor}12`, color: m.badgeColor, border: `1px solid ${m.badgeColor}20` }}>
               {m.badge}
             </span>
@@ -1047,32 +1047,41 @@ export default function DashboardPage() {
           </div>
 
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="ratioGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#1B2D6B" />
-                    <stop offset="100%" stopColor="#2563EB" />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(27,45,107,0.06)"} />
-                <XAxis dataKey="date" stroke="transparent" tick={{ fill: isDark ? "#475569" : "#94A3B8", fontWeight: 700, fontSize: 11 }} tickLine={false} />
-                <YAxis yAxisId="left" domain={[60, 85]} stroke="transparent" tick={{ fill: isDark ? "#475569" : "#94A3B8", fontWeight: 700, fontSize: 11 }} tickLine={false} />
-                <YAxis yAxisId="right" orientation="right" domain={[0, 200]} stroke="transparent" tick={{ fill: isDark ? "#475569" : "#94A3B8", fontWeight: 700, fontSize: 11 }} tickLine={false} />
-                <Tooltip content={<CustomTooltip isDark={isDark} />} />
-                <ReferenceLine yAxisId="left" y={70} stroke="rgba(239,68,68,0.35)" strokeDasharray="6 3"
-                  label={{ value: "70% Threshold", fill: "#ef4444", fontSize: 10, position: "insideTopRight" }} />
-                <Legend verticalAlign="top" height={32} iconType="circle"
-                  wrapperStyle={{ fontSize: "11px", color: isDark ? "#64748b" : "#64748B", fontWeight: 700 }} />
-                <Line yAxisId="left" name="FEV1/FVC Ratio (%)" type="monotone" dataKey="ratio"
-                  stroke="url(#ratioGrad)" strokeWidth={3} dot={{ r: 4, fill: "#1B2D6B", strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                <Line yAxisId="left" name="FEV1 (L)" type="monotone" dataKey="fev1"
-                  stroke="#059669" strokeWidth={2} dot={{ r: 3, fill: "#059669", strokeWidth: 0 }} strokeDasharray="5 3" />
-                {isDemo && <Bar yAxisId="right" name="AQI" dataKey="aqi" fill="rgba(245,158,11,0.15)" radius={[4,4,0,0]} />}
-                <Line yAxisId="right" name="Active Triggers" type="monotone" dataKey="triggerDisplay"
-                  stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3.5, fill: "#F59E0B" }} />
-              </ComposedChart>
-            </ResponsiveContainer>
+            {(() => {
+              const isMobileView = typeof window !== 'undefined' && window.innerWidth < 640;
+              const chartMargin = isMobileView
+                ? { top: 5, right: 8, left: -30, bottom: 0 }
+                : { top: 5, right: 20, left: -20, bottom: 0 };
+              const tickFontSize = isMobileView ? 9 : 11;
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={chartData} margin={chartMargin}>
+                    <defs>
+                      <linearGradient id="ratioGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#1B2D6B" />
+                        <stop offset="100%" stopColor="#2563EB" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(27,45,107,0.06)"} />
+                    <XAxis dataKey="date" stroke="transparent" tick={{ fill: isDark ? "#475569" : "#94A3B8", fontWeight: 700, fontSize: tickFontSize }} tickLine={false} />
+                    <YAxis yAxisId="left" domain={[60, 85]} stroke="transparent" tick={{ fill: isDark ? "#475569" : "#94A3B8", fontWeight: 700, fontSize: tickFontSize }} tickLine={false} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 200]} stroke="transparent" tick={{ fill: isDark ? "#475569" : "#94A3B8", fontWeight: 700, fontSize: tickFontSize }} tickLine={false} />
+                    <Tooltip content={<CustomTooltip isDark={isDark} />} />
+                    <ReferenceLine yAxisId="left" y={70} stroke="rgba(239,68,68,0.35)" strokeDasharray="6 3"
+                      label={{ value: "70%", fill: "#ef4444", fontSize: 9, position: "insideTopRight" }} />
+                    <Legend verticalAlign="top" height={32} iconType="circle"
+                      wrapperStyle={{ fontSize: isMobileView ? "10px" : "11px", color: isDark ? "#64748b" : "#64748B", fontWeight: 700 }} />
+                    <Line yAxisId="left" name="FEV1/FVC %" type="monotone" dataKey="ratio"
+                      stroke="url(#ratioGrad)" strokeWidth={3} dot={{ r: 4, fill: "#1B2D6B", strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                    <Line yAxisId="left" name="FEV1 (L)" type="monotone" dataKey="fev1"
+                      stroke="#059669" strokeWidth={2} dot={{ r: 3, fill: "#059669", strokeWidth: 0 }} strokeDasharray="5 3" />
+                    {isDemo && <Bar yAxisId="right" name="AQI" dataKey="aqi" fill="rgba(245,158,11,0.15)" radius={[4,4,0,0]} />}
+                    <Line yAxisId="right" name="Active Triggers" type="monotone" dataKey="triggerDisplay"
+                      stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3.5, fill: "#F59E0B" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              );
+            })()}
           </div>
         </motion.div>
 
@@ -1095,13 +1104,13 @@ export default function DashboardPage() {
           {/* Environmental Triggers */}
           <div className="flex flex-col gap-2 text-left">
             <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: textSub }}>Today's Triggers</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {TRIGGER_LIST.map(t => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => toggleTrigger(t.id)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black border transition-all cursor-pointer active:scale-95 select-none"
                   style={activeTriggers.includes(t.id) ? {
                     background: 'rgba(239,68,68,0.08)',
                     borderColor: 'rgba(239,68,68,0.3)',

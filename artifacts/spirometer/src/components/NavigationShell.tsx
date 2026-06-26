@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/lib/theme";
+import { loadProfile } from "@/lib/storage";
 
 interface NavigationShellProps {
   children: React.ReactNode;
@@ -15,8 +16,16 @@ export default function NavigationShell({ children }: NavigationShellProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isClinicianMode, setIsClinicianMode] = React.useState(false);
+  const [showMoreMenu, setShowMoreMenu] = React.useState(false);
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
+  const [profile, setProfile] = React.useState(() => loadProfile());
+
+  React.useEffect(() => {
+    if (showMoreMenu) {
+      setProfile(loadProfile());
+    }
+  }, [showMoreMenu]);
 
   const patientNavItems = [
     { href: "/",           label: "Dashboard",   icon: BarChart2,    accent: "#059669" },
@@ -137,13 +146,13 @@ export default function NavigationShell({ children }: NavigationShellProps) {
               <span>{isClinicianMode ? "Clinician" : "Online"}</span>
             </div>
 
-            {/* ── Patient / Clinician Portal Toggle ── */}
+            {/* ── Patient / Clinician Portal Toggle (Hidden on mobile, moved to More drawer) ── */}
             <motion.button
               onClick={() => setIsClinicianMode(v => !v)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               title={isClinicianMode ? "Switch to Patient Mode" : "Switch to Clinician Mode"}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border"
               style={{ 
                 background: isClinicianMode 
                   ? "rgba(220,38,38,0.08)" 
@@ -191,52 +200,158 @@ export default function NavigationShell({ children }: NavigationShellProps) {
               }
             </motion.button>
 
-            {/* Mobile menu button */}
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl transition-all cursor-pointer border"
-              style={{ 
-                background: isDark ? "rgba(255,255,255,0.025)" : "#FFFFFF", 
-                borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)",
-                color: textPrimary
-              }}>
-              {isMobileMenuOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile drop-down menu */}
+      {/* Bottom sheet for "More" menu on mobile */}
       <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} 
-            animate={{ opacity: 1, height: "auto" }} 
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="lg:hidden fixed inset-x-0 top-[73px] z-30 flex flex-col p-4 gap-1.5 shadow-xl border-b overflow-hidden"
-            style={{
-              background: isDark ? "rgba(10,14,26,0.95)" : "rgba(255,255,255,0.95)",
-              borderColor: headerBorder,
-              backdropFilter: "blur(20px)"
-            }}>
-            {navItems.map((item) => {
-              const isActive = location === item.href;
-              const Icon = item.icon;
-              return (
-                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                  <span className="flex items-center gap-3.5 px-4 py-3 rounded-xl cursor-pointer font-bold text-xs uppercase tracking-wider transition-all"
-                    style={isActive ? {
-                      background: `${item.accent}0f`,
-                      border: `1px solid ${item.accent}25`,
-                      color: item.accent
-                    } : { color: isDark ? "#94a3b8" : "#475569" }}>
-                    <Icon className="w-4.5 h-4.5" style={isActive ? { color: item.accent } : {}} />
-                    <span>{item.label}</span>
+        {showMoreMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40"
+              onClick={() => setShowMoreMenu(false)}
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="lg:hidden fixed bottom-0 inset-x-0 rounded-t-[2rem] z-50 p-6 flex flex-col gap-5 border-t overflow-hidden max-h-[85vh] shadow-[0_-10px_40px_rgba(0,0,0,0.15)]"
+              style={{
+                background: isDark ? "rgba(15, 23, 42, 0.98)" : "rgba(255, 255, 255, 0.98)",
+                borderColor: headerBorder,
+                backdropFilter: "blur(20px)"
+              }}
+            >
+              {/* Pull handle */}
+              <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700 mx-auto shrink-0 mb-1" />
+              
+              {/* Profile Overview (Apple Health style) */}
+              <div className="flex items-center gap-3.5 p-4 rounded-2xl border text-left"
+                style={{
+                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(27,45,107,0.02)",
+                  borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(27,45,107,0.06)"
+                }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black text-sm bg-gradient-to-tr from-[#1B2D6B] to-[#2563EB]"
+                  style={{ boxShadow: isDark ? "none" : "0 4px 12px rgba(37,99,235,0.2)" }}>
+                  {profile.name ? profile.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : "U"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-black text-slate-800 dark:text-slate-200 block truncate">
+                    {profile.name || "ReVive User"}
                   </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                    {profile.age ? `${profile.age} yrs` : "No age set"} • {profile.sex ? profile.sex.charAt(0).toUpperCase() + profile.sex.slice(1) : "Patient"}
+                  </span>
+                </div>
+                <Link href="/profile" onClick={() => setShowMoreMenu(false)}>
+                  <button className="px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95"
+                    style={{ color: textPrimary, borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(27,45,107,0.12)" }}>
+                    Settings
+                  </button>
                 </Link>
-              );
-            })}
-          </motion.div>
+              </div>
+
+              {/* Grid of remaining items (if any exist) */}
+              {navItems.slice(4).length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <div className="text-left">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Additional Features</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {navItems.slice(4).map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location === item.href;
+                      return (
+                        <Link key={item.href} href={item.href} onClick={() => setShowMoreMenu(false)}>
+                          <button className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl border transition active:scale-95 w-full cursor-pointer text-left"
+                            style={{
+                              background: isActive ? `${item.accent}0e` : (isDark ? "rgba(255,255,255,0.01)" : "rgba(27,45,107,0.01)"),
+                              borderColor: isActive ? `${item.accent}25` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(27,45,107,0.06)"),
+                              color: isActive ? item.accent : (isDark ? "#94a3b8" : "#475569")
+                            }}
+                          >
+                            <Icon className="w-5 h-5 shrink-0" style={{ color: item.accent }} />
+                            <span className="text-[10px] font-bold tracking-tight text-center truncate w-full">{item.label}</span>
+                          </button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* System Preferences Card */}
+              <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(27,45,107,0.06)" }}>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">Preferences</h4>
+                
+                {/* Theme Switcher row */}
+                <div className="flex items-center justify-between py-3 px-4 rounded-2xl border text-left"
+                  style={{
+                    background: isDark ? "rgba(255,255,255,0.01)" : "rgba(27,45,107,0.01)",
+                    borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(27,45,107,0.06)"
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-500 shrink-0">
+                      {isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">Dark Mode</span>
+                      <span className="text-[10px] text-slate-400 block">{isDark ? "Enabled" : "Disabled"}</span>
+                    </div>
+                  </div>
+                  {/* Toggle */}
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                    }}
+                    className="relative w-12 h-6.5 rounded-full transition-all duration-300 cursor-pointer shadow-inner"
+                    style={{ background: isDark ? "#2563EB" : "rgba(27,45,107,0.12)" }}
+                  >
+                    <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm"
+                      style={{ left: isDark ? "24px" : "2px" }} />
+                  </button>
+                </div>
+
+                {/* Portal switcher row */}
+                <div className="flex items-center justify-between py-3 px-4 rounded-2xl border text-left"
+                  style={{
+                    background: isClinicianMode ? "rgba(220,38,38,0.05)" : (isDark ? "rgba(255,255,255,0.01)" : "rgba(27,45,107,0.01)"),
+                    borderColor: isClinicianMode ? "rgba(220,38,38,0.15)" : (isDark ? "rgba(255,255,255,0.05)" : "rgba(27,45,107,0.06)")
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{
+                        background: isClinicianMode ? "rgba(220,38,38,0.1)" : "rgba(37,99,235,0.1)",
+                        color: isClinicianMode ? "#dc2626" : "#2563eb"
+                      }}>
+                      <Stethoscope className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">Clinician Portal</span>
+                      <span className="text-[10px] text-slate-400 block">{isClinicianMode ? "Monitoring mode active" : "Patient mode active"}</span>
+                    </div>
+                  </div>
+                  {/* Toggle */}
+                  <button
+                    onClick={() => {
+                      setIsClinicianMode(v => !v);
+                      setShowMoreMenu(false);
+                    }}
+                    className="relative w-12 h-6.5 rounded-full transition-all duration-300 cursor-pointer shadow-inner"
+                    style={{ background: isClinicianMode ? "#dc2626" : "rgba(27,45,107,0.12)" }}
+                  >
+                    <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm"
+                      style={{ left: isClinicianMode ? "24px" : "2px" }} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
@@ -247,36 +362,48 @@ export default function NavigationShell({ children }: NavigationShellProps) {
         </div>
 
         {/* Mobile bottom tab navigation (for ease of use, showing top 5 tabs) */}
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 py-2.5 px-2 flex justify-around items-center z-30 border-t backdrop-blur-md print:hidden"
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 py-3 px-2.5 flex justify-around items-center z-30 border-t backdrop-blur-md print:hidden"
           style={{
-            background: isDark ? "rgba(10,14,26,0.9)" : "rgba(255,255,255,0.9)",
+            background: isDark ? "rgba(10,14,26,0.92)" : "rgba(255,255,255,0.92)",
             borderColor: headerBorder,
             boxShadow: isDark ? "0 -8px 32px rgba(0,0,0,0.5)" : "0 -4px 20px rgba(27,45,107,0.06)"
           }}>
-          {navItems.slice(0, 5).map((item) => {
+          {navItems.slice(0, 4).map((item) => {
             const isActive = location === item.href;
             const Icon = item.icon;
             return (
               <Link key={item.href} href={item.href}>
-                <span className="flex flex-col items-center gap-1 cursor-pointer px-2 py-0.5 relative transition-all">
+                <span className="flex flex-col items-center gap-1.5 cursor-pointer px-3.5 py-1.5 relative transition-all active:scale-95">
                   {isActive && (
                     <motion.div layoutId="mobile-active-top-nav"
-                      className="absolute -inset-1 rounded-xl pointer-events-none"
-                      style={{ background: `${item.accent}0f`, border: `1px solid ${item.accent}20` }}
+                      className="absolute -inset-1.5 rounded-2xl pointer-events-none"
+                      style={{ background: `${item.accent}0e`, border: `1px solid ${item.accent}20` }}
                       transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                   )}
-                  <div className={`p-1.5 rounded-lg relative z-10 transition-all ${isActive ? "scale-110" : ""}`}
-                    style={isActive ? { color: item.accent } : { color: isDark ? "#475569" : "#94A3B8" }}>
+                  <div className={`p-1 rounded-lg relative z-10 transition-all ${isActive ? "scale-110" : ""}`}
+                    style={isActive ? { color: item.accent } : { color: isDark ? "#64748b" : "#94A3B8" }}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="text-[9px] font-black tracking-tight relative z-10 transition-colors uppercase"
-                    style={isActive ? { color: item.accent } : { color: isDark ? "#475569" : "#94A3B8" }}>
+                    style={isActive ? { color: item.accent } : { color: isDark ? "#64748b" : "#94A3B8" }}>
                     {item.label.length > 8 ? item.label.split(" ")[0] : item.label}
                   </span>
                 </span>
               </Link>
             );
           })}
+          
+          {/* More button */}
+          <button onClick={() => setShowMoreMenu(true)}
+            className="flex flex-col items-center gap-1.5 cursor-pointer px-3.5 py-1.5 relative transition-all active:scale-95"
+          >
+            <div className="p-1 rounded-lg relative z-10 transition-all text-[#94A3B8] dark:text-[#64748b]">
+              <Menu className="w-5 h-5" />
+            </div>
+            <span className="text-[9px] font-black tracking-tight relative z-10 text-[#94A3B8] dark:text-[#64748b] uppercase">
+              More
+            </span>
+          </button>
         </nav>
       </main>
     </div>

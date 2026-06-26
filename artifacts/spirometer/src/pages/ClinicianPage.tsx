@@ -1,4 +1,5 @@
 import React from "react";
+import { useTheme } from "@/lib/theme";
 import {
   Users,
   Search,
@@ -62,6 +63,8 @@ const getAiInsight = (p: typeof mockPatients[0]) => {
 };
 
 export default function ClinicianPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
@@ -235,43 +238,63 @@ export default function ClinicianPage() {
         </div>
 
         {/* 📱 Stacked Cards for Mobile Viewports */}
-        <div className="sm:hidden flex flex-col divide-y divide-slate-100">
-          {filteredPatients.map((p) => (
-            <div key={p.id} className="p-5 flex flex-col gap-3 text-left cursor-pointer" onClick={() => setSelectedPatientId(p.id)}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-bold text-slate-800 text-base">{p.name}</h4>
-                  <span className="text-xs text-slate-400 block mt-0.5">{p.age} yrs • {p.location}</span>
-                </div>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  p.status === "red" 
-                    ? "bg-red-100 text-red-700" 
-                    : p.status === "yellow" 
-                    ? "bg-amber-100 text-amber-700" 
-                    : "bg-emerald-100 text-emerald-700"
-                }`}>
-                  {p.status}
-                </span>
-              </div>
+        <div className="sm:hidden flex flex-col gap-4 p-4">
+          {filteredPatients.map((p) => {
+            const statusStyles = p.status === "red"
+              ? { bg: "bg-red-50/50 dark:bg-red-950/10", border: "border-red-100 dark:border-red-950/30", text: "text-red-700 dark:text-red-400", pill: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" }
+              : p.status === "yellow"
+              ? { bg: "bg-amber-50/50 dark:bg-amber-950/10", border: "border-amber-100 dark:border-amber-950/30", text: "text-amber-700 dark:text-amber-400", pill: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" }
+              : { bg: "bg-emerald-50/50 dark:bg-emerald-950/10", border: "border-emerald-100 dark:border-emerald-950/30", text: "text-emerald-700 dark:text-emerald-400", pill: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" };
 
-              <div className="grid grid-cols-3 gap-2 border-t border-slate-50 pt-3 text-xs text-slate-500">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">FEV1/FVC</span>
-                  <span className="font-mono font-bold text-slate-700">{p.ratio}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Change</span>
-                  <span className={p.change.startsWith("-") ? "text-red-500 font-semibold" : "text-emerald-500 font-semibold"}>
-                    {p.change}
+            return (
+              <motion.div
+                key={p.id}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedPatientId(p.id)}
+                className={`p-4 rounded-2xl border text-left cursor-pointer flex flex-col gap-3.5 transition-all shadow-[0_2px_8px_rgba(27,45,107,0.02)] ${statusStyles.bg} ${statusStyles.border}`}
+                style={{
+                  background: isDark ? "rgba(30, 41, 59, 0.25)" : undefined
+                }}
+              >
+                {/* Header info */}
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs text-white"
+                      style={{
+                        background: p.status === 'red' ? 'linear-gradient(135deg,#ef4444,#b91c1c)' : p.status === 'yellow' ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#059669,#047857)'
+                      }}>
+                      {p.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm leading-tight">{p.name}</h4>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">{p.age} yrs • {p.location}</span>
+                    </div>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${statusStyles.pill}`}>
+                    {p.status}
                   </span>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Last Test</span>
-                  <span>{p.lastTest}</span>
+
+                {/* Patient stats */}
+                <div className="grid grid-cols-3 gap-2 border-t pt-3" style={{ borderColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(27,45,107,0.04)" }}>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">FEV1/FVC</span>
+                    <span className="font-mono font-bold text-slate-700 dark:text-slate-200 text-xs">{p.ratio}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Change</span>
+                    <span className={`text-xs font-bold ${p.change.startsWith("-") ? "text-red-500" : "text-emerald-500"}`}>
+                      {p.change}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Last Test</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-xs truncate block">{p.lastTest}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
 
       </div>

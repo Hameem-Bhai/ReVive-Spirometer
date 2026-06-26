@@ -91,24 +91,25 @@ export function FluidWindMap({ aqi = 35, windSpeed = 8, windDirection = 90 }: Fl
 
     // --- Particle Setup ---
     // Classify counts and colors based on AQI
-    let maxParticles = 800;
+    const isMobile = window.innerWidth < 768;
+    let maxParticles = isMobile ? 150 : 800;
     let particleColor = { r: 59 / 255, g: 130 / 255, b: 246 / 255, a: 0.25 }; // Sky blue for good
 
     const currentAqi = aqi ?? 30;
     if (currentAqi <= 50) {
-      maxParticles = 800;
+      maxParticles = isMobile ? 150 : 800;
       // Good: Soft emerald
       particleColor = isDark 
         ? { r: 52 / 255, g: 211 / 255, b: 153 / 255, a: 0.35 }
         : { r: 5 / 255, g: 150 / 255, b: 105 / 255, a: 0.26 }; // Richer emerald, visible on light background
     } else if (currentAqi <= 100) {
-      maxParticles = 1400;
+      maxParticles = isMobile ? 250 : 1400;
       // Moderate: Soft amber
       particleColor = isDark
         ? { r: 251 / 255, g: 191 / 255, b: 36 / 255, a: 0.38 }
         : { r: 217 / 255, g: 119 / 255, b: 6 / 255, a: 0.28 }; // Richer amber
     } else {
-      maxParticles = 2600;
+      maxParticles = isMobile ? 350 : 2600;
       // Unhealthy: Warm red/grey dust haze
       particleColor = isDark
         ? { r: 248 / 255, g: 113 / 255, b: 113 / 255, a: 0.45 }
