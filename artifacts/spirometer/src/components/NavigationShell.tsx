@@ -1,8 +1,8 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { 
-  Home, Activity, BarChart2, BookOpen, Cpu, MessageSquare,
-  Menu, X, Wind, User, Calculator, Users, Sun, Moon
+  Activity, BarChart2, BookOpen,
+  MessageSquare, Menu, X, Wind, User, Calculator, Users, Sun, Moon, Stethoscope
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/lib/theme";
@@ -14,10 +14,11 @@ interface NavigationShellProps {
 export default function NavigationShell({ children }: NavigationShellProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isClinicianMode, setIsClinicianMode] = React.useState(false);
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
 
-  const navItems = [
+  const patientNavItems = [
     { href: "/",           label: "Dashboard",   icon: BarChart2,    accent: "#059669" },
     { href: "/test",       label: "Run Test",    icon: Activity,     accent: "#2563EB" },
     { href: "/chat",       label: "AI Assistant",icon: MessageSquare,accent: "#7c3aed" },
@@ -27,12 +28,21 @@ export default function NavigationShell({ children }: NavigationShellProps) {
     { href: "/profile",    label: "Profile",     icon: User,         accent: "#D97706" },
   ];
 
+  const clinicianNavItems = [
+    { href: "/clinician",  label: "Clinician Hub",   icon: Stethoscope,  accent: "#dc2626" },
+    { href: "/dashboard",  label: "Patient Records", icon: BarChart2,    accent: "#2563EB" },
+    { href: "/education",  label: "References",      icon: BookOpen,     accent: "#0891b2" },
+    { href: "/calculator", label: "Calculator",      icon: Calculator,   accent: "#0f766e" },
+  ];
+
+  const navItems = isClinicianMode ? clinicianNavItems : patientNavItems;
+
   // Adaptive colors based on theme
-  const headerBg       = isDark ? "rgba(10, 14, 26, 0.85)"     : "rgba(255, 255, 255, 0.85)";
-  const headerBorder   = isDark ? "rgba(255, 255, 255, 0.06)"  : "rgba(27, 45, 107, 0.08)";
-  const textPrimary    = isDark ? "white"                      : "#0F172A";
-  const textMuted      = isDark ? "#475569"                    : "#94A3B8";
-  const appBg          = isDark ? "hsl(220,27%,8%)"            : "#F0F4FF";
+  const headerBg     = isDark ? "rgba(10, 14, 26, 0.85)"    : "rgba(255, 255, 255, 0.85)";
+  const headerBorder = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(27, 45, 107, 0.08)";
+  const textPrimary  = isDark ? "white"                     : "#0F172A";
+  const textMuted    = isDark ? "#475569"                   : "#94A3B8";
+  const appBg        = isDark ? "hsl(220,27%,8%)"           : "#F0F4FF";
 
   return (
     <div className="min-h-screen font-sans flex flex-col relative overflow-hidden" style={{ background: appBg }}>
@@ -48,7 +58,7 @@ export default function NavigationShell({ children }: NavigationShellProps) {
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl print:hidden"
         style={{ 
           background: headerBg, 
-          borderBottom: `1px solid ${headerBorder}`, 
+          borderBottom: `1px solid ${isClinicianMode ? "rgba(220,38,38,0.12)" : headerBorder}`, 
           boxShadow: isDark ? "0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.3)" : "0 1px 0 rgba(255,255,255,0.9), 0 4px 24px rgba(27,45,107,0.06)" 
         }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
@@ -58,15 +68,20 @@ export default function NavigationShell({ children }: NavigationShellProps) {
             <div className="flex items-center gap-3 cursor-pointer">
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-                  style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 4px 16px rgba(27,45,107,0.3)" }}>
-                  <Wind className="w-5 h-5 text-white" />
+                  style={{ 
+                    background: isClinicianMode ? "linear-gradient(135deg, #991b1b, #dc2626)" : "linear-gradient(135deg, #1B2D6B, #2563EB)", 
+                    boxShadow: isClinicianMode ? "0 4px 16px rgba(220,38,38,0.3)" : "0 4px 16px rgba(27,45,107,0.3)" 
+                  }}>
+                  {isClinicianMode ? <Stethoscope className="w-5 h-5 text-white" /> : <Wind className="w-5 h-5 text-white" />}
                 </div>
-                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 animate-pulse"
-                  style={{ borderColor: isDark ? "rgb(10,14,26)" : "#FFFFFF" }} />
+                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 animate-pulse"
+                  style={{ background: isClinicianMode ? "#dc2626" : "#10b981", borderColor: isDark ? "rgb(10,14,26)" : "#FFFFFF" }} />
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-lg font-black tracking-tight leading-none mb-0.5" style={{ color: textPrimary }}>ReVive</h1>
-                <span className="text-[9px] uppercase font-bold tracking-widest block" style={{ color: textMuted }}>Diagnostics Portal</span>
+                <span className="text-[9px] uppercase font-bold tracking-widest block" style={{ color: isClinicianMode ? "#dc2626" : textMuted }}>
+                  {isClinicianMode ? "Clinician Portal" : "Diagnostics Portal"}
+                </span>
               </div>
             </div>
           </Link>
@@ -92,10 +107,8 @@ export default function NavigationShell({ children }: NavigationShellProps) {
                       <span className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                         style={{ background: isDark ? "rgba(255,255,255,0.03)" : "rgba(27,45,107,0.04)" }} />
                     )}
-
                     <Icon className="w-3.5 h-3.5 relative z-10"
                       style={{ color: isActive ? item.accent : (isDark ? "#64748b" : "#94A3B8") }} />
-                    
                     <span className="relative z-10" 
                       style={{ color: isActive ? item.accent : (isDark ? "#94a3b8" : "#475569") }}>
                       {item.label}
@@ -106,21 +119,58 @@ export default function NavigationShell({ children }: NavigationShellProps) {
             })}
           </nav>
 
-          {/* Right Section: Theme toggle, Status pill, and Mobile menu button */}
+          {/* Right Section: Portal toggle, Theme toggle, Status pill, Mobile menu */}
           <div className="flex items-center gap-2.5">
+
             {/* Status light */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider"
               style={{ 
-                background: isDark ? "rgba(5,150,105,0.06)" : "rgba(5,150,105,0.05)", 
-                borderColor: isDark ? "rgba(5,150,105,0.18)" : "rgba(5,150,105,0.2)",
-                color: "#059669"
+                background: isClinicianMode ? "rgba(220,38,38,0.06)" : (isDark ? "rgba(5,150,105,0.06)" : "rgba(5,150,105,0.05)"), 
+                borderColor: isClinicianMode ? "rgba(220,38,38,0.18)" : (isDark ? "rgba(5,150,105,0.18)" : "rgba(5,150,105,0.2)"),
+                color: isClinicianMode ? "#dc2626" : "#059669"
               }}>
               <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isClinicianMode ? "bg-red-400" : "bg-emerald-400"}`}></span>
+                <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isClinicianMode ? "bg-red-500" : "bg-emerald-500"}`}></span>
               </span>
-              <span>Online</span>
+              <span>{isClinicianMode ? "Clinician" : "Online"}</span>
             </div>
+
+            {/* ── Patient / Clinician Portal Toggle ── */}
+            <motion.button
+              onClick={() => setIsClinicianMode(v => !v)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={isClinicianMode ? "Switch to Patient Mode" : "Switch to Clinician Mode"}
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border"
+              style={{ 
+                background: isClinicianMode 
+                  ? "rgba(220,38,38,0.08)" 
+                  : (isDark ? "rgba(255,255,255,0.06)" : "#FFFFFF"),
+                borderColor: isClinicianMode 
+                  ? "rgba(220,38,38,0.25)" 
+                  : (isDark ? "rgba(255,255,255,0.1)" : "rgba(27,45,107,0.10)"),
+                color: isClinicianMode ? "#dc2626" : (isDark ? "#94a3b8" : "#64748b"),
+                boxShadow: isClinicianMode 
+                  ? "0 2px 12px rgba(220,38,38,0.12)"
+                  : (isDark ? "none" : "0 2px 8px rgba(27,45,107,0.06)")
+              }}
+            >
+              <Stethoscope className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:block text-[10px] font-black uppercase tracking-wider">
+                {isClinicianMode ? "Clinician" : "Patient"}
+              </span>
+              {/* Animated toggle track */}
+              <div className="relative w-7 h-4 rounded-full ml-0.5 shrink-0"
+                style={{ background: isClinicianMode ? "rgba(220,38,38,0.2)" : (isDark ? "rgba(255,255,255,0.1)" : "rgba(27,45,107,0.08)") }}>
+                <motion.div
+                  animate={{ x: isClinicianMode ? 13 : 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className="absolute top-0.5 w-3 h-3 rounded-full"
+                  style={{ background: isClinicianMode ? "#dc2626" : "#94a3b8" }}
+                />
+              </div>
+            </motion.button>
 
             {/* Dark mode toggle */}
             <motion.button

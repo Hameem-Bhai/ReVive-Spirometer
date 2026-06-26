@@ -1,16 +1,16 @@
 /**
  * CalculatorPage.tsx — Lung Age Estimator & BMI Calculator
  * Based on: Morris & Temple (1985) lung age formula, WHO BMI classifications
+ * Upgraded with: interactive range sliders + SVG circular gauge dials
  */
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Wind, Heart, Info, RefreshCw, ChevronDown } from "lucide-react";
+import { Calculator, Wind, Heart, Info, RefreshCw } from "lucide-react";
 import { loadProfile } from "@/lib/storage";
 
 // ─── Lung Age Formula (Morris & Temple 1985) ──────────────
 function calcLungAge(fev1L: number, actualAge: number, sex: "Male" | "Female" | string, heightCm: number): number | null {
   if (!fev1L || !actualAge || !heightCm) return null;
-  const h = heightCm / 100; // convert to meters
   if (sex === "Male") {
     const lungAge = (0.1070 * heightCm + 4.6477 - fev1L) / 0.5536;
     return Math.max(18, Math.round(lungAge));
@@ -41,37 +41,277 @@ function lungAgeDiff(lungAge: number, actual: number): { label: string; color: s
   return               { label: `${diff} yrs older — significant obstruction detected`, color: "#EF4444", icon: "🚨" };
 }
 
+// ─── SVG Circular Dial Gauge (Lung Age) ──────────────────
+function LungAgeDial({ lungAge, actualAge }: { lungAge: number; actualAge: number }) {
+  const result = lungAgeDiff(lungAge, actualAge);
+  const minAge = 20;
+  const maxAge = 100;
+  // Arc from -220deg to +40deg (260deg sweep), 130 radius
+  const R = 54;
+  const cx = 70;
+  const cy = 70;
+  const sweepDeg = 240;
+  const startAngle = -210; // degrees
+  const clampedAge = Math.max(minAge, Math.min(maxAge, lungAge));
+  const pct = (clampedAge - minAge) / (maxAge - minAge);
+  const needleAngleDeg = startAngle + pct * sweepDeg;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+
+  // Compute arc endpoints
+  const arcStart = { x: cx + R * Math.cos(toRad(startAngle)), y: cy + R * Math.sin(toRad(startAngle)) };
+  const arcEnd   = { x: cx + R * Math.cos(toRad(startAngle + sweepDeg)), y: cy + R * Math.sin(toRad(startAngle + sweepDeg)) };
+
+  // Zone arcs (colored sectors): green 20-40, blue 40-60, orange 60-80, red 80-100
+  function describeArc(fromAge: number, toAge: number) {
+    const a1 = startAngle + ((fromAge - minAge) / (maxAge - minAge)) * sweepDeg;
+    const a2 = startAngle + ((toAge   - minAge) / (maxAge - minAge)) * sweepDeg;
+    const p1 = { x: cx + R * Math.cos(toRad(a1)), y: cy + R * Math.sin(toRad(a1)) };
+    const p2 = { x: cx + R * Math.cos(toRad(a2)), y: cy + R * Math.sin(toRad(a2)) };
+    const large = (a2 - a1) > 180 ? 1 : 0;
+    return `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${large} 1 ${p2.x} ${p2.y}`;
+  }
+
+  // Needle tip & base
+  const needleLen = R - 8;
+  const needleTip  = { x: cx + needleLen * Math.cos(toRad(needleAngleDeg)), y: cy + needleLen * Math.sin(toRad(needleAngleDeg)) };
+  const needleBase1 = { x: cx + 5 * Math.cos(toRad(needleAngleDeg + 90)), y: cy + 5 * Math.sin(toRad(needleAngleDeg + 90)) };
+  const needleBase2 = { x: cx + 5 * Math.cos(toRad(needleAngleDeg - 90)), y: cy + 5 * Math.sin(toRad(needleAngleDeg - 90)) };
+
+  const zones = [
+    { from: 20, to: 45,  color: "#059669" },
+    { from: 45, to: 65,  color: "#2563EB" },
+    { from: 65, to: 80,  color: "#D97706" },
+    { from: 80, to: 100, color: "#EF4444" },
+  ];
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <svg viewBox="0 0 140 105" width={200} height={150}>
+        <defs>
+          <linearGradient id="dial-track" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(27,45,107,0.06)" />
+          </linearGradient>
+        </defs>
+
+        {/* Background track */}
+        <path
+          d={`M ${arcStart.x} ${arcStart.y} A ${R} ${R} 0 1 1 ${arcEnd.x} ${arcEnd.y}`}
+          fill="none" stroke="rgba(27,45,107,0.08)" strokeWidth={10} strokeLinecap="round"
+        />
+
+        {/* Color zones */}
+        {zones.map(z => (
+          <motion.path
+            key={z.from}
+            d={describeArc(z.from, z.to)}
+            fill="none" stroke={z.color} strokeWidth={10} strokeLinecap="round" opacity={0.7}
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+        ))}
+
+        {/* Needle */}
+        <motion.polygon
+          points={`${needleTip.x},${needleTip.y} ${needleBase1.x},${needleBase1.y} ${needleBase2.x},${needleBase2.y}`}
+          fill={result.color}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+          style={{ filter: `drop-shadow(0 2px 4px ${result.color}50)` }}
+        />
+        {/* Hub */}
+        <circle cx={cx} cy={cy} r={6} fill="white" stroke={result.color} strokeWidth={2.5} />
+
+        {/* Center label */}
+        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={16} fontWeight="900" fill={result.color}>{lungAge}</text>
+        <text x={cx} y={cy + 33} textAnchor="middle" fontSize={6.5} fontWeight="700" fill="#94a3b8" letterSpacing={1}>LUNG AGE</text>
+
+        {/* Min/max labels */}
+        <text x={arcStart.x - 4} y={arcStart.y + 3} textAnchor="end" fontSize={6} fill="#94a3b8">20</text>
+        <text x={arcEnd.x + 4}   y={arcEnd.y + 3}   textAnchor="start" fontSize={6} fill="#94a3b8">100</text>
+      </svg>
+      <div className="flex items-center gap-2 text-xs font-bold" style={{ color: result.color }}>
+        <span>{result.icon}</span>
+        <span>Your lungs are {result.label}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Semi-circular BMI Speedometer Gauge ──────────────────
+function BMIGauge({ bmi }: { bmi: number }) {
+  const cat = bmiCategory(bmi);
+  const R = 56;
+  const cx = 80;
+  const cy = 80;
+  // Semi-circle: left 180 to right 0 (top semicircle), so start at 180deg, sweep 180deg
+  const startAngle = 180;
+  const sweepDeg   = 180;
+
+  const toRad = (d: number) => (d * Math.PI) / 180;
+
+  // BMI range for gauge: 10 to 45
+  const minBMI = 10;
+  const maxBMI = 45;
+  const clampBMI = Math.max(minBMI, Math.min(maxBMI, bmi));
+  const pct = (clampBMI - minBMI) / (maxBMI - minBMI);
+  const needleAngleDeg = startAngle + pct * sweepDeg;
+
+  function describeArc(fromBMI: number, toBMI: number) {
+    const a1 = startAngle + ((fromBMI - minBMI) / (maxBMI - minBMI)) * sweepDeg;
+    const a2 = startAngle + ((toBMI   - minBMI) / (maxBMI - minBMI)) * sweepDeg;
+    const p1 = { x: cx + R * Math.cos(toRad(a1)), y: cy + R * Math.sin(toRad(a1)) };
+    const p2 = { x: cx + R * Math.cos(toRad(a2)), y: cy + R * Math.sin(toRad(a2)) };
+    const large = (a2 - a1) > 180 ? 1 : 0;
+    return `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${large} 1 ${p2.x} ${p2.y}`;
+  }
+
+  const needleLen = R - 10;
+  const needleTip   = { x: cx + needleLen * Math.cos(toRad(needleAngleDeg)), y: cy + needleLen * Math.sin(toRad(needleAngleDeg)) };
+  const needleBase1 = { x: cx + 5 * Math.cos(toRad(needleAngleDeg + 90)), y: cy + 5 * Math.sin(toRad(needleAngleDeg + 90)) };
+  const needleBase2 = { x: cx + 5 * Math.cos(toRad(needleAngleDeg - 90)), y: cy + 5 * Math.sin(toRad(needleAngleDeg - 90)) };
+
+  const zones = [
+    { from: 10,   to: 18.5, color: "#3B82F6", label: "Under" },
+    { from: 18.5, to: 25,   color: "#059669", label: "Normal" },
+    { from: 25,   to: 30,   color: "#D97706", label: "Over" },
+    { from: 30,   to: 45,   color: "#EF4444", label: "Obese" },
+  ];
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg viewBox="0 0 160 100" width={220} height={140}>
+        {/* Track */}
+        <path
+          d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`}
+          fill="none" stroke="rgba(27,45,107,0.07)" strokeWidth={12} strokeLinecap="round"
+        />
+
+        {/* Color zones */}
+        {zones.map(z => (
+          <motion.path
+            key={z.from}
+            d={describeArc(z.from, z.to)}
+            fill="none" stroke={z.color} strokeWidth={12} strokeLinecap="round" opacity={0.75}
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+        ))}
+
+        {/* Zone labels */}
+        {zones.map(z => {
+          const midBMI = (z.from + z.to) / 2;
+          const a = startAngle + ((midBMI - minBMI) / (maxBMI - minBMI)) * sweepDeg;
+          const lr = R + 14;
+          const lx = cx + lr * Math.cos(toRad(a));
+          const ly = cy + lr * Math.sin(toRad(a));
+          return (
+            <text key={z.label} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+              fontSize={5.5} fontWeight="800" fill={z.color} opacity={0.9}>{z.label}</text>
+          );
+        })}
+
+        {/* Needle */}
+        <motion.polygon
+          points={`${needleTip.x},${needleTip.y} ${needleBase1.x},${needleBase1.y} ${needleBase2.x},${needleBase2.y}`}
+          fill={cat.color}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+          style={{ filter: `drop-shadow(0 2px 4px ${cat.color}50)` }}
+        />
+        {/* Hub */}
+        <circle cx={cx} cy={cy} r={6} fill="white" stroke={cat.color} strokeWidth={2.5} />
+
+        {/* Center BMI value */}
+        <text x={cx} y={cy - 12} textAnchor="middle" fontSize={18} fontWeight="900" fill={cat.color}>{bmi}</text>
+        <text x={cx} y={cy - 2}  textAnchor="middle" fontSize={6.5} fontWeight="700" fill="#94a3b8" letterSpacing={1}>BMI</text>
+      </svg>
+
+      {/* Category badge */}
+      <span className="text-xs font-black px-3 py-1 rounded-full" style={{ background: `${cat.color}15`, color: cat.color, border: `1px solid ${cat.color}30` }}>
+        {cat.label}
+      </span>
+    </div>
+  );
+}
+
+// ─── Slider Input Component ───────────────────────────────
+function SliderInput({
+  label, value, min, max, step, unit, color, onChange
+}: {
+  label: string; value: number; min: number; max: number; step: number;
+  unit: string; color: string; onChange: (v: number) => void;
+}) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between items-center">
+        <label className="text-[10px] font-black uppercase tracking-[0.15em]" style={{ color: "#64748B" }}>{label}</label>
+        <div className="flex items-baseline gap-0.5">
+          <span className="text-lg font-black" style={{ color }}>{value}</span>
+          <span className="text-[10px] font-bold text-slate-400 ml-0.5">{unit}</span>
+        </div>
+      </div>
+      <div className="relative h-6 flex items-center">
+        {/* Track */}
+        <div className="absolute inset-x-0 h-2 rounded-full" style={{ background: "rgba(27,45,107,0.07)" }} />
+        {/* Fill */}
+        <div className="absolute left-0 h-2 rounded-full transition-all duration-100" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}80, ${color})` }} />
+        {/* Thumb input */}
+        <input
+          type="range"
+          min={min} max={max} step={step}
+          value={value}
+          onChange={e => onChange(parseFloat(e.target.value))}
+          className="absolute inset-x-0 w-full opacity-0 cursor-pointer h-6 z-10"
+        />
+        {/* Custom thumb */}
+        <div className="absolute h-5 w-5 rounded-full border-2 pointer-events-none transition-all duration-100 shadow-md"
+          style={{ left: `calc(${pct}% - 10px)`, background: "white", borderColor: color, boxShadow: `0 2px 8px ${color}40` }} />
+      </div>
+      <div className="flex justify-between text-[9px] font-bold text-slate-300">
+        <span>{min}{unit}</span><span>{max}{unit}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function CalculatorPage() {
   const savedProfile = loadProfile();
 
-  // Lung Age inputs
-  const [fev1, setFev1] = React.useState("");
-  const [laAge, setLaAge] = React.useState(savedProfile.age || "");
-  const [laSex, setLaSex] = React.useState(savedProfile.sex || "");
-  const [laHeight, setLaHeight] = React.useState("");
+  // Lung Age inputs (numeric, for sliders)
+  const [fev1,     setFev1]     = React.useState<number>(2.5);
+  const [laAge,    setLaAge]    = React.useState<number>(parseInt(savedProfile.age || "35") || 35);
+  const [laSex,    setLaSex]    = React.useState<string>(savedProfile.sex || "");
+  const [laHeight, setLaHeight] = React.useState<number>(170);
   const [laResult, setLaResult] = React.useState<number | null>(null);
 
   // BMI inputs
-  const [weight, setWeight] = React.useState("");
-  const [bmiHeight, setBmiHeight] = React.useState("");
+  const [weight,    setWeight]    = React.useState<number>(70);
+  const [bmiHeight, setBmiHeight] = React.useState<number>(170);
   const [bmiResult, setBmiResult] = React.useState<number | null>(null);
 
   const [activeTab, setActiveTab] = React.useState<"lung" | "bmi">("lung");
 
   const computeLungAge = () => {
-    const result = calcLungAge(parseFloat(fev1), parseFloat(laAge), laSex, parseFloat(laHeight));
+    const result = calcLungAge(fev1, laAge, laSex, laHeight);
     setLaResult(result);
   };
 
   const computeBMI = () => {
-    const result = calcBMI(parseFloat(weight), parseFloat(bmiHeight));
+    const result = calcBMI(weight, bmiHeight);
     setBmiResult(result);
   };
 
-  const resetLung = () => { setFev1(""); setLaAge(savedProfile.age || ""); setLaSex(savedProfile.sex || ""); setLaHeight(""); setLaResult(null); };
-  const resetBMI  = () => { setWeight(""); setBmiHeight(""); setBmiResult(null); };
+  const resetLung = () => {
+    setFev1(2.5);
+    setLaAge(parseInt(savedProfile.age || "35") || 35);
+    setLaSex(savedProfile.sex || "");
+    setLaHeight(170);
+    setLaResult(null);
+  };
+  const resetBMI = () => { setWeight(70); setBmiHeight(170); setBmiResult(null); };
 
-  const lungResult = laResult && laAge ? lungAgeDiff(laResult, parseFloat(laAge)) : null;
+  const lungResult = laResult && laAge ? lungAgeDiff(laResult, laAge) : null;
   const bmiCat = bmiResult ? bmiCategory(bmiResult) : null;
 
   return (
@@ -96,7 +336,7 @@ export default function CalculatorPage() {
       <div className="flex p-1 gap-1 rounded-2xl relative border border-slate-200"
         style={{ background: "rgba(27,45,107,0.025)" }}>
         {[
-          { key: "lung" as const, label: "Lung Age Estimator", icon: Wind, color: "#2563EB" },
+          { key: "lung" as const, label: "Lung Age Estimator", icon: Wind,  color: "#2563EB" },
           { key: "bmi"  as const, label: "BMI Calculator",     icon: Heart, color: "#059669" },
         ].map(tab => {
           const isActive = activeTab === tab.key;
@@ -123,7 +363,7 @@ export default function CalculatorPage() {
           <motion.div key="lung" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             className="flex flex-col gap-5"
           >
-            <motion.div whileHover={{ y: -3 }} className="p-6 rounded-[1.5rem] flex flex-col gap-5 bg-white"
+            <motion.div whileHover={{ y: -3 }} className="p-6 rounded-[1.5rem] flex flex-col gap-6 bg-white"
               style={{ border: '1px solid rgba(27,45,107,0.07)', boxShadow: '0 2px 4px rgba(27,45,107,0.04), 0 8px 32px rgba(27,45,107,0.07), 0 24px 64px rgba(27,45,107,0.04)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -142,67 +382,48 @@ export default function CalculatorPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { label: "FEV1 (Liters)", value: fev1, setter: setFev1, placeholder: "e.g. 3.4", type: "number" },
-                  { label: "Actual Age (years)", value: laAge, setter: setLaAge, placeholder: "e.g. 34", type: "number" },
-                  { label: "Height (cm)", value: laHeight, setter: setLaHeight, placeholder: "e.g. 170", type: "number" },
-                ].map(({ label, value, setter, placeholder, type }) => (
-                  <div key={label} className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#64748B]">{label}</label>
-                    <input 
-                      type={type} 
-                      placeholder={placeholder} 
-                      value={value}
-                      onChange={e => setter(e.target.value)} 
-                      className="input-clean bg-slate-50/50 hover:bg-slate-50 border-slate-200/80 focus:border-[#2563EB] focus:ring-[#2563EB]/10 text-[#1B2D6B] placeholder-slate-400 text-sm" 
-                    />
-                  </div>
-                ))}
+              {/* Sliders */}
+              <div className="flex flex-col gap-5">
+                <SliderInput label="FEV1 (Liters)" value={fev1} min={0.5} max={6.0} step={0.1} unit="L" color="#2563EB" onChange={setFev1} />
+                <SliderInput label="Actual Age" value={laAge} min={18} max={90} step={1} unit="yr" color="#7c3aed" onChange={setLaAge} />
+                <SliderInput label="Height" value={laHeight} min={140} max={210} step={1} unit="cm" color="#0891b2" onChange={setLaHeight} />
+              </div>
 
-                <div className="flex flex-col gap-1.5 text-left">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#64748B]">Biological Sex</label>
-                  <div className="flex gap-2">
-                    {["Male", "Female"].map(s => (
-                      <button key={s} type="button" onClick={() => setLaSex(s)}
-                        className="flex-1 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all border"
-                        style={laSex === s ? {
-                          background: "rgba(37,99,235,0.08)", borderColor: "rgba(37,99,235,0.2)", color: "#2563EB"
-                        } : {
-                          background: "rgba(27,45,107,0.025)", borderColor: "rgba(27,45,107,0.08)", color: "#64748B"
-                        }}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
+              {/* Biological sex toggle */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-[#64748B]">Biological Sex</label>
+                <div className="flex gap-2">
+                  {["Male", "Female"].map(s => (
+                    <button key={s} type="button" onClick={() => setLaSex(s)}
+                      className="flex-1 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all border"
+                      style={laSex === s ? {
+                        background: "rgba(37,99,235,0.08)", borderColor: "rgba(37,99,235,0.2)", color: "#2563EB"
+                      } : {
+                        background: "rgba(27,45,107,0.025)", borderColor: "rgba(27,45,107,0.08)", color: "#64748B"
+                      }}>
+                      {s}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <button onClick={computeLungAge}
-                disabled={!fev1 || !laAge || !laHeight || !laSex}
+                disabled={!laSex}
                 className="py-3 rounded-xl font-bold text-sm text-white cursor-pointer transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 4px 12px rgba(37,99,235,0.2)" }}>
                 Calculate Lung Age
               </button>
 
-              {/* Result */}
+              {/* Result with SVG Dial */}
               <AnimatePresence>
                 {laResult && lungResult && (
                   <motion.div key="lung-result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="p-5 rounded-2xl flex flex-col md:flex-row items-center gap-5"
-                    style={{ background: `${lungResult.color}08`, border: `1px solid ${lungResult.color}20` }}>
-                    <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full shrink-0"
-                      style={{ background: "#FFFFFF", border: `2px solid ${lungResult.color}`, boxShadow: `0 8px 20px ${lungResult.color}15` }}>
-                      <span className="text-4xl font-display font-black" style={{ color: lungResult.color }}>{laResult}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">Lung Age</span>
-                    </div>
-                    <div className="text-center md:text-left">
-                      <p className="text-2xl">{lungResult.icon}</p>
-                      <p className="font-black text-[#1B2D6B] text-base mt-1">Your lungs are {lungResult.label}</p>
-                      <p className="text-xs mt-1.5 leading-relaxed text-[#64748B]">
-                        Chronological age: <strong className="text-[#1B2D6B]">{laAge} years</strong> · Estimated lung age: <strong style={{ color: lungResult.color }}>{laResult} years</strong>
-                      </p>
-                    </div>
+                    className="flex flex-col items-center gap-4 p-6 rounded-2xl"
+                    style={{ background: `${lungResult.color}06`, border: `1px solid ${lungResult.color}20` }}>
+                    <LungAgeDial lungAge={laResult} actualAge={laAge} />
+                    <p className="text-xs text-center leading-relaxed text-[#64748B]">
+                      Chronological age: <strong className="text-[#1B2D6B]">{laAge} years</strong> · Estimated lung age: <strong style={{ color: lungResult.color }}>{laResult} years</strong>
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -215,7 +436,7 @@ export default function CalculatorPage() {
           <motion.div key="bmi" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             className="flex flex-col gap-5"
           >
-            <motion.div whileHover={{ y: -3 }} className="p-6 rounded-2xl flex flex-col gap-5 bg-white border border-slate-100 shadow-[0_20px_50px_rgba(27,45,107,0.06)]">
+            <motion.div whileHover={{ y: -3 }} className="p-6 rounded-2xl flex flex-col gap-6 bg-white border border-slate-100 shadow-[0_20px_50px_rgba(27,45,107,0.06)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Heart className="w-5 h-5" style={{ color: "#059669" }} />
@@ -226,66 +447,26 @@ export default function CalculatorPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { label: "Weight (kg)", value: weight, setter: setWeight, placeholder: "e.g. 70" },
-                  { label: "Height (cm)", value: bmiHeight, setter: setBmiHeight, placeholder: "e.g. 170" },
-                ].map(({ label, value, setter, placeholder }) => (
-                  <div key={label} className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#64748B]">{label}</label>
-                    <input 
-                      type="number" 
-                      placeholder={placeholder} 
-                      value={value}
-                      onChange={e => setter(e.target.value)} 
-                      className="input-clean bg-slate-50/50 hover:bg-slate-50 border-slate-200/80 focus:border-[#059669] focus:ring-[#059669]/10 text-[#1B2D6B] placeholder-slate-400 text-sm" 
-                    />
-                  </div>
-                ))}
+              {/* Sliders */}
+              <div className="flex flex-col gap-5">
+                <SliderInput label="Weight" value={weight} min={30} max={200} step={0.5} unit="kg" color="#059669" onChange={setWeight} />
+                <SliderInput label="Height" value={bmiHeight} min={140} max={210} step={1} unit="cm" color="#0f766e" onChange={setBmiHeight} />
               </div>
 
               <button onClick={computeBMI}
-                disabled={!weight || !bmiHeight}
-                className="py-3 rounded-xl font-bold text-sm text-white cursor-pointer transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="py-3 rounded-xl font-bold text-sm text-white cursor-pointer transition-all active:scale-95"
                 style={{ background: "linear-gradient(135deg, #059669, #10b981)", boxShadow: "0 4px 12px rgba(16,185,129,0.2)" }}>
                 Calculate BMI
               </button>
 
-              {/* BMI Scale */}
-              <div className="flex flex-col gap-2 text-left">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">WHO Classification Scale</span>
-                <div className="flex rounded-xl overflow-hidden h-2.5">
-                  {[
-                    { label: "Under", color: "#3B82F6", pct: 20 },
-                    { label: "Normal", color: "#059669", pct: 30 },
-                    { label: "Over", color: "#D97706", pct: 25 },
-                    { label: "Obese", color: "#EF4444", pct: 25 },
-                  ].map(s => (
-                    <div key={s.label} className="h-full" style={{ width: `${s.pct}%`, background: s.color, opacity: 0.75 }} />
-                  ))}
-                </div>
-                <div className="flex justify-between text-[9px] font-bold text-[#64748B]">
-                  <span>&lt;18.5</span><span>18.5</span><span>25</span><span>30</span><span>&gt;40</span>
-                </div>
-              </div>
-
-              {/* Result */}
+              {/* Result with Speedometer Gauge */}
               <AnimatePresence>
                 {bmiResult && bmiCat && (
                   <motion.div key="bmi-result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="p-5 rounded-2xl flex flex-col md:flex-row items-center gap-5"
-                    style={{ background: `${bmiCat.color}08`, border: `1px solid ${bmiCat.color}20` }}>
-                    <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full shrink-0"
-                      style={{ background: "#FFFFFF", border: `2px solid ${bmiCat.color}`, boxShadow: `0 8px 20px ${bmiCat.color}15` }}>
-                      <span className="text-4xl font-display font-black" style={{ color: bmiCat.color }}>{bmiResult}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">BMI</span>
-                    </div>
-                    <div className="text-center md:text-left">
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: `${bmiCat.color}15`, color: bmiCat.color, border: `1px solid ${bmiCat.color}25` }}>
-                        {bmiCat.label}
-                      </span>
-                      <p className="text-sm mt-2 leading-relaxed text-[#64748B]">{bmiCat.advice}</p>
-                    </div>
+                    className="flex flex-col items-center gap-4 p-6 rounded-2xl"
+                    style={{ background: `${bmiCat.color}06`, border: `1px solid ${bmiCat.color}20` }}>
+                    <BMIGauge bmi={bmiResult} />
+                    <p className="text-sm text-center leading-relaxed text-[#64748B] max-w-md">{bmiCat.advice}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

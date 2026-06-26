@@ -5,7 +5,11 @@ import {
   User, 
   Sparkles, 
   Wind,
-  Zap
+  Zap,
+  Activity,
+  MapPin,
+  Heart,
+  BookOpen
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,10 +21,60 @@ interface Message {
 }
 
 const QUICK_REPLIES = [
-  "What is a healthy FEV1/FVC ratio?",
-  "How does a Venturi tube sensor work?",
-  "Tell me about air quality in Dhaka.",
-  "Give me pursed-lip breathing tips.",
+  {
+    icon: Activity,
+    title: "FEV1/FVC Ratio",
+    description: "What is a healthy ratio?",
+    prompt: "What is a healthy FEV1/FVC ratio?",
+    color: "#2563EB",
+    bg: "rgba(37,99,235,0.07)",
+    border: "rgba(37,99,235,0.14)"
+  },
+  {
+    icon: Wind,
+    title: "Venturi Sensor",
+    description: "How does the sensor work?",
+    prompt: "How does a Venturi tube sensor work?",
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.07)",
+    border: "rgba(124,58,237,0.14)"
+  },
+  {
+    icon: MapPin,
+    title: "Dhaka Air Quality",
+    description: "AQI & lung health impact",
+    prompt: "Tell me about air quality in Dhaka.",
+    color: "#0891b2",
+    bg: "rgba(8,145,178,0.07)",
+    border: "rgba(8,145,178,0.14)"
+  },
+  {
+    icon: Heart,
+    title: "Breathing Tips",
+    description: "Pursed-lip technique guide",
+    prompt: "Give me pursed-lip breathing tips.",
+    color: "#be185d",
+    bg: "rgba(190,24,93,0.07)",
+    border: "rgba(190,24,93,0.14)"
+  },
+  {
+    icon: BookOpen,
+    title: "Spirometry Guide",
+    description: "Understanding test results",
+    prompt: "How do I understand my spirometry test results?",
+    color: "#059669",
+    bg: "rgba(5,150,105,0.07)",
+    border: "rgba(5,150,105,0.14)"
+  },
+  {
+    icon: Zap,
+    title: "Lung Capacity",
+    description: "Improve with exercise",
+    prompt: "What exercises can improve my lung capacity?",
+    color: "#d97706",
+    bg: "rgba(217,119,6,0.07)",
+    border: "rgba(217,119,6,0.14)"
+  },
 ];
 
 const TypingIndicator = () => (
@@ -209,20 +263,50 @@ export default function ChatbotPage() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Quick Replies */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-[rgba(27,45,107,0.06)]">
-          {QUICK_REPLIES.map((reply, idx) => (
-            <motion.button
-              key={idx}
-              onClick={() => sendMessage(reply)}
-              disabled={isLoading}
-              whileHover={{ y: -2, scale: 1.02, borderColor: 'rgba(37,99,235,0.25)', color: '#2563EB', background: 'rgba(37,99,235,0.04)' }}
-              whileTap={{ scale: 0.98 }}
-              className="px-4 py-2 text-xs font-bold rounded-full transition-all cursor-pointer disabled:opacity-40 bg-white border border-[rgba(27,45,107,0.08)] text-[#64748B] shadow-2xs"
-            >
-              {reply}
-            </motion.button>
-          ))}
+        {/* ── Prompt Suggestion Card Carousel ── */}
+        <div className="pt-2 border-t border-[rgba(27,45,107,0.06)]">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400 mb-2.5 px-1">Quick Prompts</p>
+          <div
+            className="flex gap-3 overflow-x-auto pb-2"
+            style={{ scrollbarWidth: 'none', scrollSnapType: 'x mandatory' }}
+          >
+            {QUICK_REPLIES.map((card, idx) => {
+              const Icon = card.icon;
+              return (
+                <motion.button
+                  key={idx}
+                  onClick={() => sendMessage(card.prompt)}
+                  disabled={isLoading}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  whileHover={{ y: -4, scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex flex-col items-start gap-2 shrink-0 p-3.5 rounded-2xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-left transition-all"
+                  style={{
+                    width: '140px',
+                    background: card.bg,
+                    border: `1px solid ${card.border}`,
+                    scrollSnapAlign: 'start'
+                  }}
+                >
+                  {/* Icon badge */}
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: card.color, boxShadow: `0 4px 12px ${card.color}40` }}>
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+                  {/* Title */}
+                  <span className="text-[11px] font-black leading-tight" style={{ color: card.color }}>
+                    {card.title}
+                  </span>
+                  {/* Description */}
+                  <span className="text-[10px] leading-snug text-slate-500 font-medium">
+                    {card.description}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Input Form */}

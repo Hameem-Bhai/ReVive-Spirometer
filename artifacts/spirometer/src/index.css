@@ -805,3 +805,132 @@
   0%   { top: 0; }
   100% { top: 100%; }
 }
+
+/* ─────────────────────────────────────────────────────────
+   PRINT MEDIA STYLES — Clean single-page hospital report
+   ───────────────────────────────────────────────────────── */
+@media print {
+  /* Reset backgrounds and enforce white canvas */
+  *, *::before, *::after {
+    background: white !important;
+    background-image: none !important;
+    background-color: white !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Page sizing */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 20mm 15mm;
+  }
+
+  html, body {
+    width: 210mm;
+    font-size: 11pt !important;
+    color: #0f172a !important;
+  }
+
+  /* Hide ALL non-report UI elements */
+  header,
+  nav,
+  footer,
+  aside,
+  .no-print,
+  button:not(.print-keep),
+  [data-testid="button-start-over"],
+  [data-testid="button-retry-analysis"],
+  .fixed,
+  .sticky,
+  [class*="backdrop"],
+  [class*="NavigationShell"],
+  [class*="mobile"],
+  [class*="sidebar"],
+  [class*="tab-bar"],
+  [class*="bottom-nav"],
+  [class*="floating"] {
+    display: none !important;
+  }
+
+  /* Report container overrides */
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Table — enforce visible borders */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 9pt !important;
+  }
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 10px !important;
+    color: #0f172a !important;
+    background: white !important;
+  }
+  thead tr {
+    background: #f1f5f9 !important;
+    background-color: #f1f5f9 !important;
+  }
+  thead th {
+    background: #f1f5f9 !important;
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Status dot colors — keep colored for report */
+  .bg-emerald-500 { background-color: #10b981 !important; }
+  .bg-amber-500   { background-color: #f59e0b !important; }
+  .bg-red-500     { background-color: #ef4444 !important; }
+  .bg-primary     { background-color: #1B2D6B !important; }
+
+  /* Keep text colors readable */
+  h1, h2, h3, h4 {
+    color: #0f172a !important;
+    page-break-after: avoid;
+  }
+  p, li, span {
+    color: #374151 !important;
+  }
+
+  /* Force report page break control */
+  .print-container {
+    page-break-inside: avoid;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Show the hidden print-only report header */
+  .print\:flex  { display: flex !important; }
+  .print\:block { display: block !important; }
+  .print\:hidden { display: none !important; }
+  .hidden.print\:flex { display: flex !important; }
+
+  /* Recommendation bullets */
+  ul {
+    padding-left: 16px !important;
+  }
+  li {
+    margin-bottom: 4px !important;
+    list-style-type: disc !important;
+  }
+
+  /* Disclaimer */
+  .print-disclaimer {
+    font-size: 8pt !important;
+    color: #64748b !important;
+    margin-top: 8mm !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding-top: 4mm !important;
+  }
+}
+

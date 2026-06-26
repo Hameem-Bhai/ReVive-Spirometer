@@ -28,43 +28,166 @@ const speak = (text: string, voiceEnabled: boolean) => {
 
 type Stage = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
-// ─── Balloon Mini-Game ────────────────────────────────────
-function BalloonGame({ pressure, phase }: { pressure: number; phase: string }) {
-  const pct = Math.min(1, pressure / 800); // 0 to 1
-  const size = 60 + pct * 120; // 60px → 180px
-  const r = size / 2;
-  const isPopped = pct >= 0.98;
-  const color = isPopped
-    ? "#ef4444"
-    : pct > 0.7 ? `hsl(${30 + pct * 30}, 90%, 55%)` : `hsl(${220 - pct * 60}, 80%, 60%)`;
+// ─── Circular SVG Pressure Dial Gauge ─────────────────────
+function DialGauge({ pressure, phase }: { pressure: number; phase: string }) {
+  const maxPressure = 800;
+  const pct = Math.min(1, Math.max(0, pressure / maxPressure));
+  const isExhaling = phase === "out";
+
+  // Arc params: 240° sweep, starts at 150°
+  const R = 70;
+  const cx = 90;
+  const cy = 95;
+  const sweepDeg = 240;
+  const startAngle = 150;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+
+  const arcStartX = cx + R * Math.cos(toRad(startAngle));
+  const arcStartY = cy + R * Math.sin(toRad(startAngle));
+  const arcEndAngle = startAngle + sweepDeg;
+  const arcEndX = cx + R * Math.cos(toRad(arcEndAngle));
+  const arcEndY = cy + R * Math.sin(toRad(arcEndAngle));
+
+  const filledAngle = startAngle + pct * sweepDeg;
+  const fillEndX = cx + R * Math.cos(toRad(filledAngle));
+  const fillEndY = cy + R * Math.sin(toRad(filledAngle));
+  const largeFill = pct * sweepDeg > 180 ? 1 : 0;
+
+  // Needle
+  const needleLen = R - 14;
+  const needleAngle = startAngle + pct * sweepDeg;
+  const needleTipX = cx + needleLen * Math.cos(toRad(needleAngle));
+  const needleTipY = cy + needleLen * Math.sin(toRad(needleAngle));
+  const nb1x = cx + 6 * Math.cos(toRad(needleAngle + 90));
+  const nb1y = cy + 6 * Math.sin(toRad(needleAngle + 90));
+  const nb2x = cx + 6 * Math.cos(toRad(needleAngle - 90));
+  const nb2y = cy + 6 * Math.sin(toRad(needleAngle - 90));
+
+  // Color interpolation: blue→green→orange→red
+  const gaugeColor = pct < 0.4
+    ? `hsl(${210 - pct * 100}, 80%, 55%)`
+    : pct < 0.7
+    ? `hsl(${170 - pct * 80}, 70%, 45%)`
+    : `hsl(${40 - pct * 40}, 90%, 52%)`;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-4">
-      <AnimatePresence mode="wait">
-        {isPopped ? (
-          <motion.div key="popped" initial={{ scale: 1.4, opacity: 1 }} animate={{ scale: 3, opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
-            className="text-6xl">💥</motion.div>
-        ) : (
-          <motion.div key="balloon"
-            animate={{ width: size, height: size * 1.15 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="relative flex items-center justify-center rounded-full"
-            style={{
-              background: `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5), ${color})`,
-              boxShadow: `0 8px 32px ${color}60, inset 0 -8px 20px rgba(0,0,0,0.15)`,
-              borderRadius: "50% 50% 50% 50% / 60% 60% 40% 40%",
-            }}>
-            {/* Shine */}
-            <div className="absolute top-[20%] left-[28%] w-[20%] h-[15%] bg-white opacity-60 rounded-full" />
-            {/* String */}
-            <motion.div className="absolute -bottom-8 w-0.5 h-8" style={{ background: color, originY: 0, marginLeft: "50%" }}
-              animate={{ rotate: [0, 3, -3, 0] }} transition={{ repeat: Infinity, duration: 2 }} />
-          </motion.div>
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 180 130" width={220} height={160}>
+        <defs>
+          <linearGradient id="gauge-fill" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#2563EB" />
+            <stop offset="50%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#ef4444" />
+          </linearGradient>
+          <filter id="glow-filter">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* Outer ring glow when exhaling */}
+        {isExhaling && (
+          <motion.circle cx={cx} cy={cy} r={R + 8} fill="none" stroke={gaugeColor} strokeWidth={2} opacity={0.2}
+            animate={{ r: [R + 6, R + 14, R + 6], opacity: [0.15, 0.3, 0.15] }}
+            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+          />
         )}
-      </AnimatePresence>
-      <p className="text-xs font-bold" style={{ color: color }}>
-        {isPopped ? "Great effort! 💨" : phase === "out" ? `Blow! ${Math.round(pct * 100)}% full` : "Inhale deeply…"}
-      </p>
+
+        {/* Track (background arc) */}
+        <path
+          d={`M ${arcStartX} ${arcStartY} A ${R} ${R} 0 1 1 ${arcEndX} ${arcEndY}`}
+          fill="none" stroke="rgba(27,45,107,0.08)" strokeWidth={12} strokeLinecap="round"
+        />
+
+        {/* Filled arc (pressure indicator) */}
+        {pct > 0.01 && (
+          <motion.path
+            d={`M ${arcStartX} ${arcStartY} A ${R} ${R} 0 ${largeFill} 1 ${fillEndX} ${fillEndY}`}
+            fill="none" stroke="url(#gauge-fill)" strokeWidth={12} strokeLinecap="round"
+            filter="url(#glow-filter)"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: pct }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          />
+        )}
+
+        {/* Zone tick marks */}
+        {[0, 0.25, 0.5, 0.75, 1].map(t => {
+          const a = startAngle + t * sweepDeg;
+          const r1 = R + 2; const r2 = R + 10;
+          return (
+            <line key={t}
+              x1={cx + r1 * Math.cos(toRad(a))} y1={cy + r1 * Math.sin(toRad(a))}
+              x2={cx + r2 * Math.cos(toRad(a))} y2={cy + r2 * Math.sin(toRad(a))}
+              stroke="rgba(27,45,107,0.15)" strokeWidth={1.5} strokeLinecap="round"
+            />
+          );
+        })}
+
+        {/* Needle */}
+        <motion.polygon
+          points={`${needleTipX},${needleTipY} ${nb1x},${nb1y} ${nb2x},${nb2y}`}
+          fill={gaugeColor}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          style={{ filter: `drop-shadow(0 2px 6px ${gaugeColor}60)` }}
+        />
+
+        {/* Hub */}
+        <circle cx={cx} cy={cy} r={9} fill="white" stroke={gaugeColor} strokeWidth={2.5} />
+        <circle cx={cx} cy={cy} r={3} fill={gaugeColor} />
+
+        {/* Pressure % */}
+        <text x={cx} y={cy - 22} textAnchor="middle" fontSize={22} fontWeight="900" fill={gaugeColor}>
+          {Math.round(pct * 100)}
+        </text>
+        <text x={cx} y={cy - 11} textAnchor="middle" fontSize={7} fontWeight="800" fill="#94a3b8" letterSpacing={1}>%</text>
+
+        {/* Phase label */}
+        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fontWeight="800" fill={isExhaling ? "#059669" : "#2563EB"} letterSpacing={0.5}>
+          {isExhaling ? "EXHALE" : "INHALE"}
+        </text>
+
+        {/* Min / Max labels */}
+        <text x={arcStartX - 6} y={arcStartY + 4} textAnchor="end" fontSize={6} fill="#94a3b8">0</text>
+        <text x={arcEndX + 6}   y={arcEndY + 4}   textAnchor="start" fontSize={6} fill="#94a3b8">MAX</text>
+      </svg>
+    </div>
+  );
+}
+
+// ─── Floating Breath Particles ─────────────────────────────
+function BreathParticles({ active }: { active: boolean }) {
+  const particles = Array.from({ length: 12 }, (_, i) => i);
+  if (!active) return null;
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center">
+      {particles.map(i => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width:  6 + Math.random() * 10,
+            height: 6 + Math.random() * 10,
+            background: `radial-gradient(circle, rgba(5,150,105,0.6), rgba(37,99,235,0.2))`,
+            left: `${30 + Math.random() * 40}%`,
+            bottom: "10%",
+            filter: "blur(1px)",
+          }}
+          animate={{
+            y:       [0, -(80 + Math.random() * 120)],
+            x:       [0, (Math.random() - 0.5) * 60],
+            opacity: [0, 0.8, 0],
+            scale:   [0.5, 1.2, 0],
+          }}
+          transition={{
+            duration: 1.5 + Math.random() * 1.5,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+            ease: "easeOut",
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -623,22 +746,29 @@ export default function SpirometryPage() {
             </p>
           </motion.div>
           
-          {/* Balloon Mini-Game */}
-          <div className="relative w-64 h-64 flex items-center justify-center">
+          {/* Circular Pressure Dial Gauge + Particles */}
+          <div className="relative w-72 h-56 flex items-center justify-center">
+            {/* Ambient glow orb */}
             <motion.div
               animate={{
-                scale: phase === 'in' ? [1, 1.5] : [1.5, 1],
-                backgroundColor: phase === 'in' ? "#3b82f6" : "#059669",
-                opacity: [0.1, 0.2, 0.1]
+                scale: phase === 'in' ? [1, 1.4] : [1.4, 1],
+                opacity: [0.08, 0.18, 0.08]
               }}
               transition={{ duration: 5, ease: "linear" }}
-              className="absolute w-40 h-40 rounded-full filter blur-xl"
+              className="absolute w-48 h-48 rounded-full pointer-events-none"
+              style={{ background: phase === 'in' ? "radial-gradient(circle, #3b82f6, transparent)" : "radial-gradient(circle, #059669, transparent)", filter: "blur(30px)" }}
             />
+
+            {/* Floating breath particles during exhale */}
+            <BreathParticles active={phase === 'out'} />
+
+            {/* Dial gauge */}
             <div className="z-10 flex flex-col items-center">
-              <BalloonGame pressure={livePressure} phase={phase} />
+              <DialGauge pressure={livePressure} phase={phase} />
+
               {/* Countdown ring */}
-              <div className="mt-2 flex flex-col items-center justify-center w-16 h-16 rounded-full"
-                style={{ background: "rgba(27,45,107,0.07)", border: "2px solid rgba(27,45,107,0.15)" }}>
+              <div className="flex flex-col items-center justify-center w-16 h-16 rounded-full -mt-2"
+                style={{ background: "rgba(27,45,107,0.06)", border: "2px solid rgba(27,45,107,0.12)" }}>
                 <span className="text-2xl font-black" style={{ color: "#1B2D6B" }}>{countdown}</span>
                 <span className="text-[8px] font-black uppercase tracking-wider" style={{ color: "#94A3B8" }}>sec</span>
               </div>
