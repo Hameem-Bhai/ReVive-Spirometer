@@ -16,6 +16,7 @@ import NavigationShell from "@/components/NavigationShell";
 import React from "react";
 import { checkAndFireReminder } from "@/lib/storage";
 import { ThemeProvider } from "@/lib/theme";
+import { Analytics } from "@vercel/analytics/react";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +142,7 @@ function App() {
             <Router />
           </WouterRouter>
           <Toaster />
+          <Analytics />
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
