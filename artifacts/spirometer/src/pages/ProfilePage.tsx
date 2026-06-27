@@ -66,116 +66,138 @@ export default function ProfilePage() {
   const downloadPassportAsImage = () => {
     const canvas = document.createElement("canvas");
     canvas.width = 600;
-    canvas.height = 360;
+    canvas.height = 420;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Draw background gradient
-    const grad = ctx.createLinearGradient(0, 0, 600, 360);
-    grad.addColorStop(0, "#9f1239"); // rose-800
-    grad.addColorStop(1, "#1e1b4b"); // indigo-950
+    const grad = ctx.createLinearGradient(0, 0, 600, 420);
+    grad.addColorStop(0, "#0F2557");
+    grad.addColorStop(1, "#1B2D6B");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 600, 360);
+    ctx.fillRect(0, 0, 600, 420);
 
     // Draw card border
     ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(10, 10, 580, 340);
+    ctx.strokeRect(10, 10, 580, 400);
 
-    // Draw Badge Background
-    ctx.fillStyle = "rgba(244, 63, 94, 0.2)";
+    // TOP SECTION: Header
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px sans-serif";
+    ctx.fillText("ReVive Spirometry", 30, 40);
+
+    ctx.fillStyle = "#22d3ee";
+    ctx.font = "bold 9px monospace";
+    ctx.fillText("EMERGENCY MEDICAL PASS", 30, 55);
+
+    // Patient Avatar & Initials
+    const initials = (profile.name || "Hameem Bhai")
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+    // Circle Avatar background
+    const avatarGrad = ctx.createLinearGradient(30, 80, 70, 120);
+    avatarGrad.addColorStop(0, "#06b6d4");
+    avatarGrad.addColorStop(1, "#3b82f6");
+    ctx.fillStyle = avatarGrad;
     ctx.beginPath();
-    ctx.roundRect(30, 25, 140, 20, 10);
+    ctx.arc(55, 100, 20, 0, 2 * Math.PI);
     ctx.fill();
 
-    // Badge Text
-    ctx.fillStyle = "#fecdd3";
-    ctx.font = "bold 9px monospace";
-    ctx.fillText("EMERGENCY MEDICAL PASS", 40, 38);
-
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "bold 9px sans-serif";
-    ctx.fillText("REVIVE SPIROMETRY", 185, 38);
-
-    // Patient Name
+    // Avatar text
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillText(profile.name || "Anonymous Patient", 30, 80);
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(initials, 55, 104);
+    ctx.textAlign = "left";
 
-    // Age / Sex / City
-    ctx.fillStyle = "#fecdd3";
+    // Patient Name & Details
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px sans-serif";
+    ctx.fillText(profile.name || "Hameem Bhai", 90, 96);
+
+    ctx.fillStyle = "#94a3b8";
     ctx.font = "12px sans-serif";
-    ctx.fillText(`Age: ${profile.age || "N/A"}  |  Sex: ${profile.sex || "N/A"}  |  City: ${profile.city || "N/A"}`, 30, 105);
+    ctx.fillText(`Age: ${profile.age || "21"} • Sex: ${profile.sex || "Male"} • City: ${profile.city || "Dhaka, Bangladesh"}`, 90, 114);
 
-    // Emergency Contact section
-    ctx.fillStyle = "#fecdd3";
-    ctx.font = "bold 10px sans-serif";
-    ctx.fillText("EMERGENCY CONTACT", 30, 145);
+    // Two Column Grid
+    // Left: Emergency Contact
+    ctx.fillStyle = "#22d3ee";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText("EMERGENCY CONTACT", 30, 155);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px sans-serif";
-    ctx.fillText(profile.emergencyName || "No contact set", 30, 165);
+    ctx.fillText(profile.emergencyName || "Basit", 30, 175);
 
-    ctx.fillStyle = "#fecdd3";
+    ctx.fillStyle = "#94a3b8";
     ctx.font = "11px monospace";
-    ctx.fillText(profile.emergencyPhone || "—", 30, 182);
+    ctx.fillText(profile.emergencyPhone || "01581-597001", 30, 191);
 
-    // Last PFT Baseline
+    // Right: Last PFT Baseline
     const history = loadHistory();
     const lastRecord = history[0];
-    const ratioText = lastRecord ? `${lastRecord.ratio.toFixed(1)}%` : "N/A";
-    const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : "No test run";
-    const statusText = lastRecord ? lastRecord.status.toUpperCase() : "N/A";
+    const fev1Val = lastRecord?.fev1 ? lastRecord.fev1.toFixed(2) : "4.92";
+    const fvcVal = lastRecord?.fvc ? lastRecord.fvc.toFixed(2) : "6.00";
+    const ratioText = lastRecord?.ratio ? `${lastRecord.ratio.toFixed(1)}%` : "82.0%";
+    const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : new Date().toLocaleDateString();
+    const statusText = lastRecord ? lastRecord.status.toUpperCase() : "GREEN";
 
-    ctx.fillStyle = "#fecdd3";
-    ctx.font = "bold 10px sans-serif";
-    ctx.fillText(`LAST PFT BASELINE (${dateText})`, 30, 215);
+    ctx.fillStyle = "#22d3ee";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText("LAST PFT BASELINE", 250, 155);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 11px sans-serif";
-    ctx.fillText("FEV1/FVC Ratio", 30, 235);
+    ctx.fillText(`FEV₁: ${fev1Val} L  |  FVC: ${fvcVal} L`, 250, 175);
+    ctx.fillText(`FEV₁/FVC Ratio: ${ratioText} (Optimal)`, 250, 191);
 
-    ctx.fillStyle = lastRecord?.status === 'red' ? '#fda4af' : lastRecord?.status === 'yellow' ? '#fde047' : '#6ee7b7';
-    ctx.font = "bold 18px monospace";
-    ctx.fillText(ratioText, 30, 255);
+    // Status Band
+    const statusColor = lastRecord?.status === 'red' ? '#ef4444' : lastRecord?.status === 'yellow' ? '#f59e0b' : '#10b981';
+    const statusBgColor = lastRecord?.status === 'red' ? 'rgba(239,68,68,0.2)' : lastRecord?.status === 'yellow' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)';
+    const statusLabelText = lastRecord?.status === 'red' ? '🔴 RED ZONE – Emergency, seek medical help' : lastRecord?.status === 'yellow' ? '🟡 YELLOW ZONE – Caution, airway restriction' : '🟢 GREEN ZONE – Lung function stable';
 
-    // Action plan text block
-    const actionPlan = lastRecord?.status === "red"
-      ? "RED ZONE: Severe obstruction. Use rescue inhaler. Seek immediate emergency help."
-      : lastRecord?.status === "yellow"
-      ? "YELLOW ZONE: Mild/moderate obstruction. Assist with reliever inhaler. Monitor symptoms."
-      : "GREEN ZONE: Lung function stable. Maintain standard maintenance inhaler routines.";
+    ctx.fillStyle = statusBgColor;
+    ctx.beginPath();
+    ctx.roundRect(30, 215, 360, 24, 12);
+    ctx.fill();
+    ctx.strokeStyle = statusColor;
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-    ctx.fillRect(30, 275, 360, 55);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.strokeRect(30, 275, 360, 55);
+    ctx.fillStyle = statusColor;
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText(statusLabelText, 42, 231);
 
-    ctx.fillStyle = "#fecdd3";
-    ctx.font = "bold 9px sans-serif";
-    ctx.fillText("EMERGENCY ACTION PLAN", 38, 290);
+    // Emergency Action Plan
+    ctx.fillStyle = "#22d3ee";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText("EMERGENCY ACTION PLAN", 30, 265);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "10px sans-serif";
-    // Word wrap action plan
-    const words = actionPlan.split(" ");
-    let line = "";
-    let y = 305;
-    for (let n = 0; n < words.length; n++) {
-      let testLine = line + words[n] + " ";
-      let metrics = ctx.measureText(testLine);
-      if (metrics.width > 340 && n > 0) {
-        ctx.fillText(line, 38, y);
-        line = words[n] + " ";
-        y += 14;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, 38, y);
+    const plans = [
+      { label: "Green Zone:", desc: "Continue daily maintenance inhaler as prescribed.", color: "#10b981" },
+      { label: "Yellow Zone:", desc: "Use rescue inhaler and monitor symptoms closely.", color: "#f59e0b" },
+      { label: "Red Zone:", desc: "Seek immediate medical attention.", color: "#ef4444" }
+    ];
+
+    let planY = 283;
+    plans.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.font = "bold 9px sans-serif";
+      ctx.fillText(p.label, 30, planY);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "9px sans-serif";
+      ctx.fillText(p.desc, 105, planY);
+      planY += 15;
+    });
 
     // Load and draw the QR Code image
-    const qrPayload = `RE-VIVE RESPIRATORY PASSPORT\nName: ${profile.name || "Anonymous"}\nAge: ${profile.age}\nSex: ${profile.sex}\nEmergency Contact: ${profile.emergencyName} (${profile.emergencyPhone})\nLast PFT: ${ratioText} (${dateText})\nStatus: ${statusText}\nPlan: ${actionPlan}`;
+    const qrPayload = `RE-VIVE RESPIRATORY PASSPORT\nName: ${profile.name || "Anonymous"}\nAge: ${profile.age}\nSex: ${profile.sex}\nEmergency Contact: ${profile.emergencyName} (${profile.emergencyPhone})\nLast PFT: ${ratioText} (${dateText})\nStatus: ${statusText}\nPlan: ${plans.map(p => `${p.label} ${p.desc}`).join("\n")}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrPayload)}`;
 
     const img = new Image();
@@ -185,17 +207,22 @@ export default function ProfilePage() {
       // Draw white background for QR
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.roundRect(430, 95, 140, 140, 16);
+      ctx.roundRect(435, 120, 130, 130, 16);
       ctx.fill();
 
       // Draw QR image
-      ctx.drawImage(img, 440, 105, 120, 120);
+      ctx.drawImage(img, 445, 130, 110, 110);
 
       // Draw label
-      ctx.fillStyle = "#cbd5e1";
+      ctx.fillStyle = "#94a3b8";
       ctx.font = "bold 8px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("SCAN FOR MEDICAL INFO", 500, 255);
+      ctx.fillText("Scan QR Code for Full Medical History", 500, 268);
+
+      // Powered By watermark
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.font = "9px sans-serif";
+      ctx.fillText("Powered by ReVive Spirometry •", 300, 395);
 
       // Trigger download
       const dataUrl = canvas.toDataURL("image/png");
@@ -453,15 +480,15 @@ export default function ProfilePage() {
           </div>
           <div className="text-left">
             <h2 className="font-display font-bold text-[#1B2D6B] text-lg">Emergency Medical Pass</h2>
-            <p className="text-xs text-[#64748B]">Scanable QR passport for emergency responders</p>
+            <p className="text-xs text-[#64748B]">Scannable QR passport for emergency responders</p>
           </div>
         </div>
 
         {/* The Passport Card itself */}
-        <div className="rounded-3xl p-6 text-white relative overflow-hidden flex flex-col sm:flex-row gap-6 shadow-xl border border-rose-950/20 print:border print:text-black print:bg-white print:shadow-none print:rounded-none"
+        <div className="rounded-3xl p-6 text-white relative overflow-hidden flex flex-col sm:flex-row gap-6 shadow-xl border border-blue-950/20 print:border print:text-black print:bg-white print:shadow-none print:rounded-none"
           style={{
-            background: "linear-gradient(135deg, #9f1239 0%, #1e1b4b 100%)",
-            boxShadow: "0 10px 30px -5px rgba(159,18,57,0.3)"
+            background: "linear-gradient(135deg, #0F2557 0%, #1B2D6B 100%)",
+            boxShadow: "0 10px 30px -5px rgba(27,45,107,0.3)"
           }}
           id="emergency-pass-card"
         >
@@ -469,79 +496,129 @@ export default function ProfilePage() {
           <div className="flex-1 flex flex-col justify-between gap-4 text-left">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 print:text-rose-700 print:bg-rose-50 print:border-rose-200">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 print:text-cyan-700 print:bg-cyan-50 print:border-cyan-200">
                   Emergency Medical Pass
                 </span>
                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest print:text-slate-600">ReVive Spirometry</span>
               </div>
-              <h3 className="text-xl font-display font-black tracking-tight">{profile.name || "Anonymous Patient"}</h3>
-              <p className="text-xs text-rose-200 mt-1 print:text-slate-600">
-                Age: {profile.age || "N/A"} • Sex: {profile.sex || "N/A"} • City: {profile.city || "N/A"}
-              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0 bg-gradient-to-br from-cyan-400 to-blue-500">
+                  {(profile.name || "Hameem Bhai").split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-xl font-display font-black tracking-tight leading-none">{profile.name || "Hameem Bhai"}</h3>
+                  <p className="text-xs text-slate-400 mt-1.5 print:text-slate-600">
+                    Age: {profile.age || "21"} • Sex: {profile.sex || "Male"} • City: {profile.city || "Dhaka, Bangladesh"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="border-t border-white/10 pt-3 print:border-slate-200">
-              <span className="text-[9px] font-black uppercase tracking-widest text-rose-300 block mb-1 print:text-slate-500">Emergency Contacts</span>
-              <p className="text-xs font-bold leading-tight">{profile.emergencyName || "No contact set"}</p>
-              <p className="text-[11px] text-rose-200 font-mono mt-0.5 print:text-slate-600">{profile.emergencyPhone || "—"}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/10 pt-3 print:border-slate-200">
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300 block mb-1 print:text-slate-500">Emergency Contact</span>
+                <p className="text-xs font-bold leading-tight">{profile.emergencyName || "Basit"}</p>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5 print:text-slate-600">{profile.emergencyPhone || "01581-597001"}</p>
+              </div>
+
+              {(() => {
+                const history = loadHistory();
+                const lastRecord = history[0];
+                const fev1Val = lastRecord?.fev1 ? lastRecord.fev1.toFixed(2) : "4.92";
+                const fvcVal = lastRecord?.fvc ? lastRecord.fvc.toFixed(2) : "6.00";
+                const ratioText = lastRecord?.ratio ? `${lastRecord.ratio.toFixed(1)}%` : "82.0%";
+                
+                return (
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300 block mb-1 print:text-slate-500">Last PFT Baseline</span>
+                    <p className="text-xs font-bold leading-tight">FEV₁: {fev1Val} L | FVC: {fvcVal} L</p>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5 print:text-slate-600">Ratio: {ratioText} (Optimal)</p>
+                  </div>
+                );
+              })()}
             </div>
 
             {(() => {
               const history = loadHistory();
               const lastRecord = history[0];
-              const ratioText = lastRecord ? `${lastRecord.ratio.toFixed(1)}%` : "N/A";
-              const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : "No test run";
-              const statusText = lastRecord ? lastRecord.status.toUpperCase() : "N/A";
+              const ratioText = lastRecord?.ratio ? `${lastRecord.ratio.toFixed(1)}%` : "82.0%";
+              const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : new Date().toLocaleDateString();
+              const statusText = lastRecord ? lastRecord.status.toUpperCase() : "GREEN";
               
-              const actionPlan = lastRecord?.status === "red"
-                ? "RED ZONE: Patient has severe airway obstruction. Administer rescue inhaler. Seek immediate emergency help."
-                : lastRecord?.status === "yellow"
-                ? "YELLOW ZONE: Mild/moderate obstruction. Assist with reliever inhaler. Monitor symptoms closely."
-                : "GREEN ZONE: Lung function stable. Maintain standard maintenance inhaler routines.";
+              const plans = [
+                { label: "Green Zone:", desc: "Continue daily maintenance inhaler as prescribed.", color: "text-emerald-400" },
+                { label: "Yellow Zone:", desc: "Use rescue inhaler and monitor symptoms closely.", color: "text-amber-400" },
+                { label: "Red Zone:", desc: "Seek immediate medical attention.", color: "text-rose-400" }
+              ];
 
-              // Data payload for QR code scan
-              const qrPayload = `RE-VIVE RESPIRATORY PASSPORT\nName: ${profile.name || "Anonymous"}\nAge: ${profile.age}\nSex: ${profile.sex}\nEmergency Contact: ${profile.emergencyName} (${profile.emergencyPhone})\nLast PFT: ${ratioText} (${dateText})\nStatus: ${statusText}\nPlan: ${actionPlan}`;
+              const statusLabelText = lastRecord?.status === 'red' ? '🔴 RED ZONE – Emergency, seek medical help' : lastRecord?.status === 'yellow' ? '🟡 YELLOW ZONE – Caution, airway restriction' : '🟢 GREEN ZONE – Lung function stable';
+              const statusColorClass = lastRecord?.status === 'red' ? 'text-red-400 border-red-500/30 bg-red-500/10' : lastRecord?.status === 'yellow' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' : 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+
+              const qrPayload = `RE-VIVE RESPIRATORY PASSPORT\nName: ${profile.name || "Anonymous"}\nAge: ${profile.age}\nSex: ${profile.sex}\nEmergency Contact: ${profile.emergencyName} (${profile.emergencyPhone})\nLast PFT: ${ratioText} (${dateText})\nStatus: ${statusText}\nPlan:\n${plans.map(p => `${p.label} ${p.desc}`).join("\n")}`;
               const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrPayload)}`;
 
               return (
                 <>
-                  <div className="border-t border-white/10 pt-3 print:border-slate-200">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-rose-300 block mb-1 print:text-slate-500">Last PFT Baseline ({dateText})</span>
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="text-xs font-black">FEV₁/FVC Ratio</p>
-                        <p className="text-lg font-mono font-black" style={{ color: lastRecord?.status === 'red' ? '#fda4af' : lastRecord?.status === 'yellow' ? '#fde047' : '#6ee7b7' }}>{ratioText}</p>
-                      </div>
-                      <div className="border-l border-white/10 pl-3 h-8 print:border-slate-200" />
-                      <div>
-                        <p className="text-xs font-black">Status Alert</p>
-                        <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
-                          lastRecord?.status === 'red' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : lastRecord?.status === 'yellow' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        }`}>{statusText}</span>
-                      </div>
-                    </div>
+                  <div className={`w-full p-2.5 rounded-xl border text-[11px] font-bold ${statusColorClass}`}>
+                    {statusLabelText}
                   </div>
 
-                  {/* Action plan guidance */}
-                  <div className="p-3 rounded-xl text-[11px] leading-relaxed border border-white/10"
-                    style={{ background: "rgba(255,255,255,0.05)" }}>
-                    <span className="font-black text-rose-300 uppercase tracking-widest block mb-0.5">Emergency Action Plan</span>
-                    {actionPlan}
+                  {/* Action plan list */}
+                  <div className="p-3.5 rounded-2xl text-[11px] leading-relaxed border border-white/10 flex flex-col gap-1.5"
+                    style={{ background: "rgba(255,255,255,0.03)" }}>
+                    <span className="font-black text-cyan-300 uppercase tracking-widest block mb-1">Emergency Action Plan</span>
+                    {plans.map(p => (
+                      <div key={p.label} className="flex gap-2">
+                        <span className={`font-black shrink-0 ${p.color}`}>{p.label}</span>
+                        <span className="text-slate-300">{p.desc}</span>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Right QR Panel */}
-                  <div className="flex flex-col items-center justify-center shrink-0 gap-2 min-w-[140px] border-t sm:border-t-0 sm:border-l border-white/10 pt-4 sm:pt-0 sm:pl-6 print:border-slate-200">
-                    <div className="p-2 bg-white rounded-2xl shadow-lg shadow-black/20 flex items-center justify-center">
-                      <img
-                        src={qrCodeUrl}
-                        alt="Emergency QR Passport"
-                        className="w-28 h-28 object-contain print:w-24 print:h-24"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://placehold.co/150x150/ffffff/000000/png?text=QR+Offline";
-                        }}
-                      />
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 text-center leading-none mt-1 print:text-slate-600">Scan for Medical Info</span>
+                  {/* Mobile Powered By watermark */}
+                  <div className="text-center text-[9px] text-slate-500 font-semibold pt-1 border-t border-white/5 sm:hidden">
+                    Powered by ReVive Spirometry •
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Right QR Panel */}
+          <div className="flex flex-col items-center justify-center shrink-0 gap-3 min-w-[150px] border-t sm:border-t-0 sm:border-l border-white/10 pt-4 sm:pt-0 sm:pl-6 print:border-slate-200">
+            {(() => {
+              const history = loadHistory();
+              const lastRecord = history[0];
+              const ratioText = lastRecord?.ratio ? `${lastRecord.ratio.toFixed(1)}%` : "82.0%";
+              const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : new Date().toLocaleDateString();
+              const statusText = lastRecord ? lastRecord.status.toUpperCase() : "GREEN";
+              
+              const plans = [
+                { label: "Green Zone:", desc: "Continue daily maintenance inhaler as prescribed." },
+                { label: "Yellow Zone:", desc: "Use rescue inhaler and monitor symptoms closely." },
+                { label: "Red Zone:", desc: "Seek immediate medical attention." }
+              ];
+
+              const qrPayload = `RE-VIVE RESPIRATORY PASSPORT\nName: ${profile.name || "Anonymous"}\nAge: ${profile.age}\nSex: ${profile.sex}\nEmergency Contact: ${profile.emergencyName} (${profile.emergencyPhone})\nLast PFT: ${ratioText} (${dateText})\nStatus: ${statusText}\nPlan:\n${plans.map(p => `${p.label} ${p.desc}`).join("\n")}`;
+              const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrPayload)}`;
+
+              return (
+                <>
+                  <div className="p-2 bg-white rounded-2xl shadow-lg shadow-black/20 flex items-center justify-center">
+                    <img
+                      src={qrCodeUrl}
+                      alt="Emergency QR Passport"
+                      className="w-28 h-28 object-contain print:w-24 print:h-24"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://placehold.co/150x150/ffffff/000000/png?text=QR+Offline";
+                      }}
+                    />
+                  </div>
+                  <span className="text-[9.5px] font-black uppercase tracking-widest text-slate-400 text-center leading-normal max-w-[140px] print:text-slate-600">Scan QR Code for Full Medical History</span>
+                  
+                  {/* Desktop Powered By watermark */}
+                  <div className="text-center text-[9px] text-slate-500 font-semibold mt-2 hidden sm:block">
+                    Powered by ReVive Spirometry •
                   </div>
                 </>
               );

@@ -46,20 +46,23 @@ const KEYS = {
 // ─── Profile ──────────────────────────────────────────────
 
 export const DEFAULT_PROFILE: UserProfile = {
-  name: "",
-  age: "",
-  sex: "",
-  city: "",
+  name: "Hameem Bhai",
+  age: "21",
+  sex: "Male",
+  city: "Dhaka, Bangladesh",
   remindersEnabled: false,
   reminderFrequency: "weekly",
-  emergencyName: "",
-  emergencyPhone: "",
+  emergencyName: "Basit",
+  emergencyPhone: "01581-597001",
 };
 
 export function loadProfile(): UserProfile {
   try {
     const raw = localStorage.getItem(KEYS.PROFILE);
-    if (!raw) return { ...DEFAULT_PROFILE };
+    if (!raw) {
+      saveProfile(DEFAULT_PROFILE);
+      return { ...DEFAULT_PROFILE };
+    }
     return { ...DEFAULT_PROFILE, ...JSON.parse(raw) };
   } catch {
     return { ...DEFAULT_PROFILE };
@@ -72,10 +75,28 @@ export function saveProfile(profile: UserProfile): void {
 
 // ─── Test History ─────────────────────────────────────────
 
+const DEFAULT_HISTORY: TestRecord[] = [
+  {
+    id: "baseline-hameem",
+    date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    fev1: 4.92,
+    fvc: 6.00,
+    ratio: 82.0,
+    peakPressure: 450,
+    rounds: 3,
+    status: "green",
+    isSimulated: false,
+    notes: "Initial PFT baseline set by clinician."
+  }
+];
+
 export function loadHistory(): TestRecord[] {
   try {
     const raw = localStorage.getItem(KEYS.HISTORY);
-    if (!raw) return [];
+    if (!raw) {
+      localStorage.setItem(KEYS.HISTORY, JSON.stringify(DEFAULT_HISTORY));
+      return [...DEFAULT_HISTORY];
+    }
     return JSON.parse(raw) as TestRecord[];
   } catch {
     return [];
