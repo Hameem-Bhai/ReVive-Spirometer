@@ -81,6 +81,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "canvas-confetti": "^1.9.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1"
