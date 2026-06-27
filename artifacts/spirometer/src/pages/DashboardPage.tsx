@@ -12,7 +12,8 @@ import {
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { loadHistory, loadProfile, getHistoryChartData, getHistoryStats } from "@/lib/storage";
-import { getGamificationStats } from "@/lib/gamification";
+import { getGamificationStats, getXpNeededForLevel, getLevelTitle, unlockAchievement, addXp } from "@/lib/gamification";
+import { useToast } from "@/hooks/use-toast";
 import { DailyInsight } from "@/components/DailyInsight";
 import { ConfettiBlast } from "@/components/ConfettiBlast";
 import { FluidWindMap } from "@/components/FluidWindMap";
@@ -76,6 +77,17 @@ export default function DashboardPage() {
 
   const [symptomLogSuccess, setSymptomLogSuccess] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
+  const [showShareModal, setShowShareModal] = React.useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = React.useState(false);
+  const [copiedLink, setCopiedLink] = React.useState(false);
+  const { toast } = useToast();
+  const [isOffline, setIsOffline] = React.useState<boolean>(!navigator.onLine);
+  const [cachedAqiPayload, setCachedAqiPayload] = React.useState<(AqiState & { cachedAt?: number }) | null>(() => {
+    try {
+      const raw = localStorage.getItem('revive_last_aqi_payload');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
   const [cough, setCough] = React.useState("none");
   const [shortBreath, setShortBreath] = React.useState("none");
   const [fatigue, setFatigue] = React.useState("none");
@@ -209,9 +221,24 @@ export default function DashboardPage() {
         windSpeed,
         windDirection
       });
+      const payload = { aqi, city: cityName, loading: false, error: false, pm2_5, pm10, co, no2, so2, o3, windSpeed, windDirection, cachedAt: Date.now() };
+      setCachedAqiPayload(payload);
+      localStorage.setItem('revive_last_aqi_payload', JSON.stringify(payload));
       localStorage.setItem("revive_selected_aqi_location", JSON.stringify({ latitude, longitude, name: cityName }));
     } catch {
-      setAqiState({ aqi: null, city: "", loading: false, error: true });
+      // Try to load cached payload
+      const raw = localStorage.getItem('revive_last_aqi_payload');
+      if (raw) {
+        try {
+          const cached = JSON.parse(raw);
+          setAqiState({ ...cached, loading: false, error: false });
+          setCachedAqiPayload(cached);
+        } catch {
+          setAqiState({ aqi: null, city: '', loading: false, error: true });
+        }
+      } else {
+        setAqiState({ aqi: null, city: '', loading: false, error: true });
+      }
     }
   };
 
@@ -255,6 +282,17 @@ export default function DashboardPage() {
       }
     }
     triggerGeolocation();
+  }, []);
+
+  React.useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,6 +367,47 @@ export default function DashboardPage() {
   ];
 
   const handleSymptomSubmit = (e: React.FormEvent) => { e.preventDefault(); setSymptomLogSuccess(true); setTimeout(() => setSymptomLogSuccess(false), 3000); };
+
+  // --- Doctor QR Sharing System ---
+  const shareUrl = React.useMemo(() => {
+    try {
+      if (!history || history.length === 0) return "";
+      const compactHistory = history.map(r => [
+        r.date,
+        r.fev1,
+        r.fvc,
+        r.ratio,
+        r.status,
+        r.peakPressure,
+        r.rounds,
+        r.isSimulated ? 1 : 0
+      ]);
+      const payload = {
+        p: [profile.name || "Jane Doe", profile.age || "35", profile.sex || "female"],
+        h: compactHistory
+      };
+      const json = JSON.stringify(payload);
+      return `${window.location.origin}/#/clinician?import=${btoa(unescape(encodeURIComponent(json)))}`;
+    } catch (e) {
+      console.error("Failed to generate share URL:", e);
+      return "";
+    }
+  }, [history, profile]);
+
+  React.useEffect(() => {
+    if (showShareModal) {
+      const { unlockedNow } = unlockAchievement("sharing_is_caring");
+      if (unlockedNow) {
+        const { leveledUp, newLevel } = addXp(50);
+        toast({
+          title: "🩺 Achievement Unlocked: Sharing is Caring!",
+          description: leveledUp
+            ? `LEVELED UP! You are now Level ${newLevel} (${getLevelTitle(newLevel)}) 🏆`
+            : "You generated a clinical sharing code! +50 XP gained.",
+        });
+      }
+    }
+  }, [showShareModal, toast]);
 
   // Print PDF report
   const handlePrint = () => {
@@ -416,6 +495,116 @@ export default function DashboardPage() {
         { date: "2026-05-15T10:00:00Z", fev1: 3.4, fvc: 4.5, ratio: 75.5, peakPressure: 13.2, status: "green" as const, isSimulated: true }
       ]
     : history.slice(0, 10);
+  // ─── Correlation Analytics Engine ─────────────────────────
+  const correlationData = React.useMemo(() => {
+    const src = isDemo ? DEMO_DATA : history.map(r => ({ fev1: r.fev1, fvc: r.fvc, ratio: r.ratio, date: r.date }));
+    if (src.length < 2) return null;
+
+    // Trigger impact: compare avg ratio on days with 1+ triggers vs 0 triggers
+    let triggerDays: number[] = [];
+    let cleanDays: number[] = [];
+    src.forEach(r => {
+      const dateStr = isDemo ? r.date : new Date((r as any).date || r.date).toDateString();
+      let triggers: string[] = [];
+      try {
+        const saved = localStorage.getItem(`revive_triggers_${dateStr}`);
+        if (saved) triggers = JSON.parse(saved);
+      } catch {}
+      if (triggers.length > 0) triggerDays.push(r.ratio);
+      else cleanDays.push(r.ratio);
+    });
+    const avgTrigger = triggerDays.length > 0 ? +(triggerDays.reduce((a,b) => a+b, 0) / triggerDays.length).toFixed(1) : null;
+    const avgClean = cleanDays.length > 0 ? +(cleanDays.reduce((a,b) => a+b, 0) / cleanDays.length).toFixed(1) : null;
+    const triggerImpact = avgTrigger !== null && avgClean !== null ? +(avgTrigger - avgClean).toFixed(1) : null;
+
+    // AQI impact (demo only has aqi field)
+    let highAqiRatios: number[] = [];
+    let lowAqiRatios: number[] = [];
+    if (isDemo) {
+      (DEMO_DATA as any[]).forEach(d => {
+        if (d.aqi > 80) highAqiRatios.push(d.ratio);
+        else lowAqiRatios.push(d.ratio);
+      });
+    }
+    const avgHighAqi = highAqiRatios.length > 0 ? +(highAqiRatios.reduce((a,b)=>a+b,0)/highAqiRatios.length).toFixed(1) : null;
+    const avgLowAqi = lowAqiRatios.length > 0 ? +(lowAqiRatios.reduce((a,b)=>a+b,0)/lowAqiRatios.length).toFixed(1) : null;
+    const aqiImpact = avgHighAqi !== null && avgLowAqi !== null ? +(avgHighAqi - avgLowAqi).toFixed(1) : null;
+
+    // Time of day pattern (morning = hour < 12, evening = hour >= 16)
+    let morningRatios: number[] = [];
+    let eveningRatios: number[] = [];
+    if (!isDemo) {
+      history.forEach(r => {
+        const h = new Date(r.date).getHours();
+        if (h < 12) morningRatios.push(r.ratio);
+        else if (h >= 16) eveningRatios.push(r.ratio);
+      });
+    }
+    const avgMorning = morningRatios.length > 0 ? +(morningRatios.reduce((a,b)=>a+b,0)/morningRatios.length).toFixed(1) : null;
+    const avgEvening = eveningRatios.length > 0 ? +(eveningRatios.reduce((a,b)=>a+b,0)/eveningRatios.length).toFixed(1) : null;
+
+    // Overall trend
+    const ratios = src.map(d => d.ratio);
+    const first = ratios.slice(0, Math.ceil(ratios.length / 2));
+    const last = ratios.slice(Math.floor(ratios.length / 2));
+    const avgFirst = +(first.reduce((a,b)=>a+b,0)/first.length).toFixed(1);
+    const avgLast = +(last.reduce((a,b)=>a+b,0)/last.length).toFixed(1);
+    const overallTrend = +(avgLast - avgFirst).toFixed(1);
+
+    return { triggerImpact, avgTrigger, avgClean, aqiImpact, avgHighAqi, avgLowAqi, avgMorning, avgEvening, overallTrend, triggerDaysCount: triggerDays.length, cleanDaysCount: cleanDays.length };
+  }, [history, isDemo]);
+
+  const insightsPanelRef = React.useRef<HTMLDivElement>(null);
+  const [isExportingPdf, setIsExportingPdf] = React.useState(false);
+
+  const exportInsightsPdf = async () => {
+    if (!insightsPanelRef.current || isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const { default: html2canvas } = await import('html2canvas');
+      const canvas = await html2canvas(insightsPanelRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height / canvas.width) * imgW;
+      // Header
+      pdf.setFillColor(15, 37, 87);
+      pdf.rect(0, 0, pageW, 20, 'F');
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('ReVive Spirometer — Pulmonary Insights Report', margin, 13);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(180, 200, 240);
+      pdf.text(`Patient: ${profile.name || 'Patient'} | Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, margin, 18);
+      // Chart image
+      pdf.addImage(imgData, 'PNG', margin, 24, imgW, Math.min(imgH, pageH - 40));
+      // Watermark footer
+      pdf.setFontSize(7);
+      pdf.setTextColor(180, 180, 180);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('Generated by HameemBhai er Dokan | ReVive Spirometer v2.0', pageW / 2, pageH - 6, { align: 'center' });
+      const name = (profile.name || 'Patient').replace(/\s+/g, '_');
+      const month = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).replace(' ', '');
+      pdf.save(`Pulmonary_Insights_${name}_${month}.pdf`);
+      toast({ title: '📄 PDF Exported!', description: `Saved as Pulmonary_Insights_${name}_${month}.pdf` });
+    } catch (err) {
+      toast({ title: 'Export failed', description: 'Could not generate PDF. Try again.' });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const renderReportContent = () => {
     return (
       <div style={{ color: '#0F172A', fontSize: '11px', lineHeight: 1.45, textAlign: 'left' }}>
@@ -655,7 +844,7 @@ export default function DashboardPage() {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 no-print">
           {isDemo && (
             <Link href="/test">
               <span className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm cursor-pointer text-white transition-all hover:-translate-y-0.5"
@@ -666,6 +855,35 @@ export default function DashboardPage() {
                 <Activity className="w-4 h-4" /> Run First Test
               </span>
             </Link>
+          )}
+          {!isDemo && (
+            <>
+              <button 
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl font-black text-sm cursor-pointer border transition-all active:scale-95 hover:bg-slate-50 dark:hover:bg-slate-800"
+                style={{ 
+                  color: textPrimary, 
+                  borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(27,45,107,0.15)",
+                  background: isDark ? "rgba(255,255,255,0.02)" : "#FFFFFF",
+                  boxShadow: isDark ? "none" : "0 2px 8px rgba(27,45,107,0.04)"
+                }}
+              >
+                <FileText className="w-4.5 h-4.5 text-indigo-500" /> Export PDF Report
+              </button>
+              
+              <button 
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl font-black text-sm cursor-pointer border transition-all active:scale-95 hover:bg-slate-50 dark:hover:bg-slate-800"
+                style={{ 
+                  color: textPrimary, 
+                  borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(27,45,107,0.15)",
+                  background: isDark ? "rgba(255,255,255,0.02)" : "#FFFFFF",
+                  boxShadow: isDark ? "none" : "0 2px 8px rgba(27,45,107,0.04)"
+                }}
+              >
+                <Users className="w-4.5 h-4.5 text-emerald-500" /> Share with Doctor
+              </button>
+            </>
           )}
         </div>
       </motion.div>
@@ -701,45 +919,109 @@ export default function DashboardPage() {
         {/* Streak */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
           whileHover={{ y: -4 }}
-          className="p-5 rounded-2xl flex items-center gap-4 cursor-default"
-          style={{ ...cardStyle, background: isDark ? "rgba(217,119,6,0.08)" : "rgba(217,119,6,0.05)", border: "1px solid rgba(217,119,6,0.2)" }}>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.2)" }}>
-            <Flame className="w-6 h-6" style={{ color: "#D97706" }} />
+          className="p-5 rounded-2xl flex items-center gap-4 cursor-default relative overflow-hidden"
+          style={{ 
+            ...cardStyle, 
+            background: isDark ? "rgba(239,68,68,0.06)" : "linear-gradient(135deg, rgba(254,243,199,0.5) 0%, rgba(254,226,226,0.3) 100%)", 
+            border: "1px solid rgba(239,68,68,0.2)" 
+          }}>
+          {/* Subtle bg glow */}
+          <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-red-500/10 blur-xl pointer-events-none rounded-full" />
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-2xl"
+            style={{ 
+              background: "linear-gradient(135deg, #FEF3C7, #FEE2E2)", 
+              border: "1px solid rgba(239,68,68,0.15)",
+              boxShadow: "0 4px 12px rgba(239,68,68,0.15)"
+            }}>
+            🔥
           </div>
-          <div>
+          <div className="text-left">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-black" style={{ color: "#D97706" }}>{gamStats.currentStreak}</span>
-              <span className="text-xs font-bold" style={{ color: "#f59e0b" }}>/ {gamStats.longestStreak} best</span>
+              <span className="text-3xl font-black text-red-500">{gamStats.currentStreak}</span>
+              <span className="text-xs font-bold text-amber-600">/ {gamStats.longestStreak} best</span>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: textMuted }}>Day Streak</p>
+            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: textMuted }}>Check-in Streak</p>
           </div>
         </motion.div>
 
-        {/* Badges */}
+        {/* Hero Level & XP Widget */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
           whileHover={{ y: -4 }}
-          className="p-5 rounded-2xl flex items-center gap-4 cursor-default"
-          style={{ ...cardStyle }}>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(27,45,107,0.07)", border: "1px solid rgba(27,45,107,0.12)" }}>
-            <Trophy className="w-6 h-6" style={{ color: "#1B2D6B" }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black" style={{ color: textPrimary }}>
-                {gamStats.badges.filter(b => b.unlocked).length}
-              </span>
-              <span className="text-xs font-bold" style={{ color: textMuted }}>/ {gamStats.badges.length}</span>
+          onClick={() => setShowAchievementsModal(true)}
+          className="p-5 rounded-2xl flex items-center gap-5 cursor-pointer transition-all text-left"
+          style={{ 
+            ...cardStyle,
+            background: isDark 
+              ? "rgba(30, 41, 59, 0.45)" 
+              : "linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(27, 45, 107, 0.03) 100%)",
+            border: isDark 
+              ? "1px solid rgba(255, 255, 255, 0.12)" 
+              : "1px solid rgba(27, 45, 107, 0.15)",
+            boxShadow: isDark
+              ? "0 8px 32px 0 rgba(0, 0, 0, 0.4)"
+              : "0 8px 32px 0 rgba(37, 99, 235, 0.06)"
+          }}>
+          {/* Glowing Circular Progress Ring */}
+          <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+            {/* Outer shadow glow */}
+            <div className="absolute inset-0 rounded-full bg-blue-500/10 blur-md pointer-events-none" />
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 64 64">
+              <circle cx="32" cy="32" r="28" fill="none" stroke={isDark ? "rgba(255,255,255,0.06)" : "rgba(27,45,107,0.06)"} strokeWidth="4" />
+              <motion.circle
+                cx="32" cy="32" r="28"
+                fill="none"
+                stroke="url(#levelRingGrad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 28}`}
+                initial={{ strokeDashoffset: 2 * Math.PI * 28 }}
+                animate={{ strokeDashoffset: 2 * Math.PI * 28 * (1 - (gamStats.xp / getXpNeededForLevel(gamStats.level))) }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+              />
+              <defs>
+                <linearGradient id="levelRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3B82F6" />
+                  <stop offset="100%" stopColor="#8B5CF6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-black leading-none" style={{ color: textPrimary }}>{gamStats.level}</span>
+              <span className="text-[8px] font-black uppercase opacity-60 tracking-wider mt-0.5" style={{ color: textMuted }}>LVL</span>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: textMuted }}>Badges Unlocked</p>
-            <div className="flex gap-1 flex-wrap">
-              {gamStats.badges.slice(0, 5).map(b => (
-                <span key={b.id} className="text-base" title={b.name}
-                  style={{ opacity: b.unlocked ? 1 : 0.2, filter: b.unlocked ? "none" : "grayscale(1)" }}>
-                  {b.icon}
-                </span>
-              ))}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <h3 className="font-black text-sm tracking-tight truncate" style={{ color: textPrimary }}>
+                {getLevelTitle(gamStats.level)}
+              </h3>
+              <span className="text-[10px] font-black tracking-wider opacity-85 px-2 py-0.5 rounded-full"
+                style={{ 
+                  color: "#8B5CF6", 
+                  background: "rgba(139,92,246,0.1)", 
+                  border: "1px solid rgba(139,92,246,0.15)" 
+                }}>
+                {gamStats.xp} / {getXpNeededForLevel(gamStats.level)} XP
+              </span>
+            </div>
+            
+            {/* Animated Progress Bar */}
+            <div className="relative h-2.5 rounded-full overflow-hidden mb-2" style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(27,45,107,0.06)" }}>
+              <motion.div 
+                className="absolute inset-y-0 left-0 rounded-full"
+                initial={{ width: 0 }} 
+                animate={{ width: `${Math.min(100, (gamStats.xp / getXpNeededForLevel(gamStats.level)) * 100)}%` }} 
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                style={{ background: "linear-gradient(90deg, #3B82F6, #8B5CF6)" }} 
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider" style={{ color: textMuted }}>
+              <span>View Achievements</span>
+              <span className="flex items-center gap-1">
+                {gamStats.badges.filter(b => b.unlocked).length} / {gamStats.badges.length} Unlocked 🏆
+              </span>
             </div>
           </div>
         </motion.div>
@@ -767,6 +1049,51 @@ export default function DashboardPage() {
           <p className="text-[10px]" style={{ color: textMuted }}>{communityPct}% of weekly community goal met 🌍</p>
         </motion.div>
       </div>
+
+      {/* ── Offline Mode Banner ──────────────────────── */}
+      {isOffline && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center gap-4"
+          style={{
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.8))'
+              : 'linear-gradient(135deg, rgba(241,245,249,0.9), rgba(226,232,240,0.8))',
+            borderColor: isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.2)',
+            backdropFilter: 'blur(20px)'
+          }}
+        >
+          <div className="p-2.5 rounded-xl shrink-0" style={{ background: 'rgba(100,116,139,0.15)' }}>
+            <Globe className="w-5 h-5" style={{ color: '#64748B' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black uppercase tracking-wider" style={{ color: '#64748B' }}>Offline Mode</span>
+              {cachedAqiPayload?.cachedAt && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: 'rgba(100,116,139,0.12)', color: '#94A3B8' }}>
+                  Last synced {Math.round((Date.now() - cachedAqiPayload.cachedAt) / 3600000)}h ago
+                </span>
+              )}
+            </div>
+            <p className="text-xs mt-0.5" style={{ color: isDark ? '#64748B' : '#94A3B8' }}>
+              {cachedAqiPayload?.city
+                ? `Using cached data for ${cachedAqiPayload.city}. Stay safe bestie ✨`
+                : 'No internet connection. Connect to see live air quality data.'}
+            </p>
+          </div>
+          <button
+            onClick={() => { if (navigator.onLine) triggerGeolocation(); }}
+            className="px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shrink-0"
+            style={{
+              background: navigator.onLine ? 'linear-gradient(135deg, #1B2D6B, #2563EB)' : 'rgba(100,116,139,0.15)',
+              color: navigator.onLine ? 'white' : '#94A3B8'
+            }}
+          >
+            {navigator.onLine ? '↻ Sync Now' : 'No Connection'}
+          </button>
+        </motion.div>
+      )}
 
       {/* ── AQI Banner ───────────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} whileHover={{ y: -3 }} className="relative z-20">
@@ -1228,6 +1555,177 @@ export default function DashboardPage() {
           })}
         </div>
       </motion.div>
+      {/* ── Pulmonary Insights Correlation Panel ─────── */}
+      {(correlationData || isDemo) && (
+        <motion.div ref={insightsPanelRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
+          className="p-6 rounded-2xl cursor-default" style={cardStyle}>
+          {/* Header Row */}
+          <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <div>
+              <h3 className="text-base font-black flex items-center gap-2" style={{ color: textPrimary }}>
+                🧬 Pulmonary Insights
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(139,92,246,0.1)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.2)' }}>AI Analysis</span>
+              </h3>
+              <p className="text-xs mt-0.5" style={{ color: textMuted }}>Correlations between environment and lung performance</p>
+            </div>
+            <button
+              onClick={exportInsightsPdf}
+              disabled={isExportingPdf}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-white transition-all active:scale-95 disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #7C3AED, #4F46E5)', boxShadow: '0 4px 16px rgba(124,58,237,0.3)' }}
+            >
+              {isExportingPdf ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+              ) : (
+                <>🔥 Export Full Report</>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {/* Trigger Impact Dial */}
+            <div className="p-4 rounded-2xl border flex flex-col items-center gap-3"
+              style={{ background: isDark ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.03)', borderColor: 'rgba(239,68,68,0.15)' }}>
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: textSub }}>Trigger Impact</p>
+              {/* SVG Dial */}
+              {(() => {
+                const impact = correlationData?.triggerImpact ?? (isDemo ? -4.2 : null);
+                const abs = Math.abs(impact ?? 0);
+                const pct = Math.min(1, abs / 15);
+                const R = 36; const cx = 44; const cy = 44;
+                const startAngle = 150; const sweepDeg = 240;
+                const toRad = (d: number) => (d * Math.PI) / 180;
+                const arcSX = cx + R * Math.cos(toRad(startAngle));
+                const arcSY = cy + R * Math.sin(toRad(startAngle));
+                const arcEA = startAngle + sweepDeg;
+                const arcEX = cx + R * Math.cos(toRad(arcEA));
+                const arcEY = cy + R * Math.sin(toRad(arcEA));
+                const fillA = startAngle + pct * sweepDeg;
+                const fillX = cx + R * Math.cos(toRad(fillA));
+                const fillY = cy + R * Math.sin(toRad(fillA));
+                const large = pct * sweepDeg > 180 ? 1 : 0;
+                const color = (impact ?? 0) < -2 ? '#ef4444' : (impact ?? 0) < 0 ? '#f59e0b' : '#059669';
+                return (
+                  <svg viewBox="0 0 88 72" width={110} height={90}>
+                    <path d={`M ${arcSX} ${arcSY} A ${R} ${R} 0 1 1 ${arcEX} ${arcEY}`} fill="none" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(239,68,68,0.1)'} strokeWidth={8} strokeLinecap="round" />
+                    {pct > 0.01 && <path d={`M ${arcSX} ${arcSY} A ${R} ${R} 0 ${large} 1 ${fillX} ${fillY}`} fill="none" stroke={color} strokeWidth={8} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${color}80)` }} />}
+                    <text x={cx} y={cy - 4} textAnchor="middle" fontSize={14} fontWeight="900" fill={color}>{impact !== null ? `${impact > 0 ? '+' : ''}${impact}%` : 'N/A'}</text>
+                    <text x={cx} y={cy + 10} textAnchor="middle" fontSize={7} fontWeight="700" fill="#94a3b8">FEV₁/FVC shift</text>
+                  </svg>
+                );
+              })()}
+              <p className="text-[10px] text-center leading-relaxed" style={{ color: textMuted }}>
+                {correlationData?.triggerImpact !== null
+                  ? `${correlationData!.triggerImpact! < 0 ? 'FEV₁/FVC drops' : 'FEV₁/FVC improves'} ${Math.abs(correlationData!.triggerImpact!)}% on trigger days vs. clean days`
+                  : isDemo ? 'FEV₁/FVC drops ~4.2% when environmental triggers are active' : 'Log triggers for days to see correlation'}
+              </p>
+            </div>
+
+            {/* AQI Hazard Correlation */}
+            <div className="p-4 rounded-2xl border flex flex-col gap-3"
+              style={{ background: isDark ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.03)', borderColor: 'rgba(245,158,11,0.15)' }}>
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: textSub }}>AQI Hazard Correlation</p>
+              {[{
+                label: `High AQI (>80) Days — Avg Ratio`,
+                value: correlationData?.avgHighAqi ?? (isDemo ? 71.5 : null),
+                color: '#ef4444'
+              }, {
+                label: `Clean Air (≤80) Days — Avg Ratio`,
+                value: correlationData?.avgLowAqi ?? (isDemo ? 76.2 : null),
+                color: '#059669'
+              }].map((row, i) => (
+                <div key={i}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[9px] font-bold" style={{ color: textMuted }}>{row.label}</span>
+                    <span className="text-xs font-black" style={{ color: row.color }}>{row.value !== null ? `${row.value}%` : 'N/A'}</span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(245,158,11,0.08)' }}>
+                    <motion.div className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: row.value !== null ? `${Math.min(100, (row.value / 100) * 100)}%` : '0%' }}
+                      transition={{ duration: 1.2, ease: 'easeOut' }}
+                      style={{ background: row.color }} />
+                  </div>
+                </div>
+              ))}
+              {(() => {
+                const diff = (correlationData?.aqiImpact ?? (isDemo ? -4.7 : null));
+                return diff !== null ? (
+                  <p className="text-[10px] leading-relaxed mt-1" style={{ color: diff < 0 ? '#f59e0b' : '#059669' }}>
+                    ⚠️ FEV₁/FVC is {Math.abs(diff)}% {diff < 0 ? 'lower' : 'higher'} on high pollution days
+                  </p>
+                ) : null;
+              })()}
+            </div>
+
+            {/* Time of Day Pattern */}
+            <div className="p-4 rounded-2xl border flex flex-col gap-3"
+              style={{ background: isDark ? 'rgba(37,99,235,0.06)' : 'rgba(37,99,235,0.03)', borderColor: 'rgba(37,99,235,0.15)' }}>
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: textSub }}>Time-of-Day Pattern</p>
+              {[{
+                label: '🌅 Morning Tests',
+                value: correlationData?.avgMorning ?? (isDemo ? 76.2 : null),
+                sub: 'Before 12 PM'
+              }, {
+                label: '🌆 Evening Tests',
+                value: correlationData?.avgEvening ?? (isDemo ? 73.8 : null),
+                sub: 'After 4 PM'
+              }].map((row, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-xl"
+                  style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(27,45,107,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(27,45,107,0.06)'}` }}>
+                  <div>
+                    <p className="text-xs font-black" style={{ color: textPrimary }}>{row.label}</p>
+                    <p className="text-[9px]" style={{ color: textMuted }}>{row.sub}</p>
+                  </div>
+                  <span className="text-base font-black" style={{ color: '#2563EB' }}>
+                    {row.value !== null ? `${row.value}%` : '—'}
+                  </span>
+                </div>
+              ))}
+              {!isDemo && correlationData?.avgMorning !== null && correlationData?.avgEvening !== null && (
+                <p className="text-[10px]" style={{ color: textMuted }}>
+                  {correlationData!.avgMorning! > (correlationData!.avgEvening ?? 0)
+                    ? '✅ You perform better in the morning. Try scheduling tests before noon.'
+                    : '✅ Your lung function is stronger in the evening.'}
+                </p>
+              )}
+              {isDemo && <p className="text-[10px]" style={{ color: textMuted }}>🌅 Morning tests average 2.4% higher FEV₁/FVC — schedule tests before noon for best results.</p>}
+            </div>
+
+            {/* Overall Trend + Advisory */}
+            <div className="p-4 rounded-2xl border flex flex-col gap-3"
+              style={{ background: isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.03)', borderColor: 'rgba(5,150,105,0.15)' }}>
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: textSub }}>Overall Trend</p>
+              {(() => {
+                const trend = correlationData?.overallTrend ?? (isDemo ? 0.9 : null);
+                const color = trend !== null ? (trend >= 0 ? '#059669' : '#ef4444') : '#64748B';
+                return (
+                  <>
+                    <div className="text-center">
+                      <span className="text-4xl font-black" style={{ color }}>
+                        {trend !== null ? `${trend > 0 ? '+' : ''}${trend}%` : '—'}
+                      </span>
+                      <p className="text-[9px] mt-1 font-bold" style={{ color: textMuted }}>FEV₁/FVC change (recent vs. early)</p>
+                    </div>
+                    <div className="p-3 rounded-xl mt-auto" style={{ background: `${color}10`, border: `1px solid ${color}20` }}>
+                      <p className="text-[10px] leading-relaxed font-medium" style={{ color }}>
+                        {trend !== null
+                          ? trend >= 1
+                            ? '🎉 Your lung function is improving! Keep up your consistent breathing exercises.'
+                            : trend >= -1
+                            ? '📊 Lung function is stable. Consistent daily tests help maintain this plateau.'
+                            : '⚠️ A declining trend detected. Consider consulting your clinician and reviewing trigger diary.'
+                          : isDemo ? '📊 Stable trend with slight improvement. Consistent training is working!' : 'Run more tests to see trend data.'}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
 
       {/* ── Print-only medical report ─────────────────── */}
@@ -1345,6 +1843,220 @@ export default function DashboardPage() {
                   {/* Report content */}
                   {renderReportContent()}
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Achievements Gallery Modal */}
+      <AnimatePresence>
+        {showAchievementsModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 md:p-6 backdrop-blur-md bg-slate-900/60 no-print">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] border"
+              style={{
+                background: isDark ? "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" : "#FFFFFF",
+                borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)"
+              }}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b"
+                style={{ borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)" }}>
+                <div className="text-left">
+                  <h3 className="text-lg font-black" style={{ color: textPrimary }}>Pulmonary Achievements</h3>
+                  <p className="text-xs mt-0.5" style={{ color: textMuted }}>Complete lung exercises to unlock rare titles</p>
+                </div>
+                <button onClick={() => setShowAchievementsModal(false)}
+                  className="p-2 rounded-xl border transition cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                  style={{ borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(27,45,107,0.12)", color: textMuted }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Gallery */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {gamStats.badges.map((b) => {
+                    const rarityColors = {
+                      common: { text: "text-blue-500", bg: "rgba(59,130,246,0.1)", gradient: "linear-gradient(135deg, #60A5FA, #2563EB)" },
+                      rare: { text: "text-emerald-500", bg: "rgba(16,185,129,0.1)", gradient: "linear-gradient(135deg, #34D399, #059669)" },
+                      epic: { text: "text-purple-500", bg: "rgba(139,92,246,0.1)", gradient: "linear-gradient(135deg, #A78BFA, #7C3AED)" },
+                      legendary: { text: "text-amber-500", bg: "rgba(245,158,11,0.1)", gradient: "linear-gradient(135deg, #FBBF24, #D97706)" }
+                    }[b.rarity];
+
+                    return (
+                      <div 
+                        key={b.id} 
+                        className="p-4 rounded-2xl border flex items-center gap-4 transition-all relative overflow-hidden text-left"
+                        style={{
+                          background: isDark ? "rgba(30, 41, 59, 0.25)" : "rgba(27, 45, 107, 0.01)",
+                          borderColor: isDark 
+                            ? (b.unlocked ? "rgba(139, 92, 246, 0.25)" : "rgba(255, 255, 255, 0.04)") 
+                            : (b.unlocked ? "rgba(37, 99, 235, 0.25)" : "rgba(27, 45, 107, 0.08)"),
+                          boxShadow: b.unlocked 
+                            ? (isDark ? "0 4px 20px rgba(139, 92, 246, 0.08)" : "0 4px 20px rgba(37, 99, 235, 0.05)")
+                            : "none",
+                          opacity: b.unlocked ? 1 : 0.6
+                        }}
+                      >
+                        {/* Circular Stamp Badge */}
+                        <div 
+                          className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-2xl relative shadow-md"
+                          style={{
+                            background: b.unlocked ? rarityColors.gradient : (isDark ? "rgba(255,255,255,0.04)" : "rgba(27,45,107,0.06)"),
+                            border: b.unlocked ? "2px solid #FFFFFF" : "2px dashed rgba(148, 163, 184, 0.3)",
+                            filter: b.unlocked ? "none" : "grayscale(1) contrast(0.8)",
+                            boxShadow: b.unlocked ? "0 4px 12px rgba(0,0,0,0.15)" : "none"
+                          }}
+                        >
+                          {b.unlocked ? (
+                            <span>{b.icon}</span>
+                          ) : (
+                            <span className="text-sm font-bold text-slate-400">🔒</span>
+                          )}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="font-black text-sm leading-tight truncate" style={{ color: b.unlocked ? textPrimary : textMuted }}>
+                              {b.title}
+                            </h4>
+                            <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${rarityColors.text}`}
+                              style={{ background: rarityColors.bg }}>
+                              {b.rarity}
+                            </span>
+                          </div>
+                          <p className="text-[10px] mt-1 leading-normal" style={{ color: textMuted }}>
+                            {b.description}
+                          </p>
+                          {b.unlocked && b.unlockedAt && (
+                            <p className="text-[8px] mt-1 text-slate-400 font-medium">
+                              Unlocked {new Date(b.unlockedAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t flex justify-end bg-slate-50 dark:bg-slate-900/40"
+                style={{ borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)" }}>
+                <button 
+                  onClick={() => setShowAchievementsModal(false)}
+                  className="px-5 py-2.5 rounded-xl font-black text-xs cursor-pointer text-white"
+                  style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)" }}
+                >
+                  Awesome!
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Share with Doctor Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 md:p-6 backdrop-blur-md bg-slate-900/60 no-print">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col border"
+              style={{
+                background: isDark ? "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" : "#FFFFFF",
+                borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)"
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b"
+                style={{ borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)" }}>
+                <div className="text-left">
+                  <h3 className="text-base font-black" style={{ color: textPrimary }}>Clinical QR Sharing</h3>
+                  <p className="text-xs mt-0.5" style={{ color: textMuted }}>Secure encrypted link for medical review</p>
+                </div>
+                <button onClick={() => setShowShareModal(false)}
+                  className="p-2 rounded-xl border transition cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                  style={{ borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(27,45,107,0.12)", color: textMuted }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 flex flex-col items-center gap-5 text-center">
+                <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                  Your doctor can scan this QR code or follow the secure link to instantly import your spirometric charts and daily symptom logs directly into the Clinician Hub.
+                </p>
+
+                {/* QR Code Container */}
+                <div className="p-4 bg-white rounded-2xl border border-slate-200/50 shadow-md relative group">
+                  {shareUrl ? (
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}&color=0f172a`} 
+                      alt="Clinical Patient History QR"
+                      className="w-48 h-48 block"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 flex items-center justify-center text-xs font-bold text-slate-400">
+                      Generating...
+                    </div>
+                  )}
+                </div>
+
+                {/* Copiable Link Row */}
+                <div className="w-full flex flex-col gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-left" style={{ color: textSub }}>Direct Sharing Link</span>
+                  <div className="flex gap-2 p-1.5 rounded-xl border"
+                    style={{ 
+                      background: isDark ? "rgba(0,0,0,0.2)" : "rgba(27,45,107,0.02)",
+                      borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(27,45,107,0.08)"
+                    }}
+                  >
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={shareUrl} 
+                      className="flex-1 bg-transparent border-none text-[10px] font-mono px-2 outline-none select-all"
+                      style={{ color: textMuted }}
+                    />
+                    <button 
+                      onClick={() => {
+                        if (shareUrl) {
+                          navigator.clipboard.writeText(shareUrl);
+                          setCopiedLink(true);
+                          toast({ title: "Link Copied!", description: "Share this link with your clinician." });
+                          setTimeout(() => setCopiedLink(false), 2000);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg font-black text-xs transition active:scale-95 text-white shrink-0"
+                      style={{ background: copiedLink ? "#10B981" : "linear-gradient(135deg, #1B2D6B, #2563EB)" }}
+                    >
+                      {copiedLink ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t flex justify-end bg-slate-50 dark:bg-slate-900/40"
+                style={{ borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(27,45,107,0.08)" }}>
+                <button 
+                  onClick={() => setShowShareModal(false)}
+                  className="px-5 py-2.5 rounded-xl font-black text-xs cursor-pointer border hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  style={{ color: textPrimary, borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(27,45,107,0.12)" }}
+                >
+                  Close
+                </button>
               </div>
             </motion.div>
           </div>

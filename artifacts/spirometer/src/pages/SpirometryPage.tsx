@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Activity, Play, ArrowRight, Usb, RefreshCw, FileText, Wind, Volume2, VolumeX, Vibrate } from "lucide-react";
+import { CheckCircle2, Activity, Play, ArrowRight, Usb, RefreshCw, FileText, Wind, Volume2, VolumeX, Vibrate, Bluetooth, BluetoothSearching } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAnalyzeSpirometer } from "@workspace/api-client-react";
 import { SpiroRound, SpiroAnalysis } from "@workspace/api-zod";
-import { saveTestRecord, loadProfile, classifyRatio } from "@/lib/storage";
+import { saveTestRecord, loadProfile, classifyRatio, loadHistory } from "@/lib/storage";
+import { addXp, updateStreak, runAchievementScan, getLevelTitle } from "@/lib/gamification";
+import { useToast } from "@/hooks/use-toast";
 
 // ─── Haptic Feedback ──────────────────────────────────────
 const vibrate = (pattern: number | number[]) => {
@@ -196,6 +198,7 @@ function BreathParticles({ active }: { active: boolean }) {
 export default function SpirometryPage() {
   const [stage, setStage] = useState<Stage>(1);
   const [roundsTotal, setRoundsTotal] = useState<number>(3);
+  const { toast } = useToast();
   
   const savedProfile = loadProfile();
   const [age, setAge] = useState<string>(savedProfile.age || "");
@@ -205,6 +208,11 @@ export default function SpirometryPage() {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [isBluetoothConnected, setIsBluetoothConnected] = useState<boolean>(false);
+  const [isBluetoothConnecting, setIsBluetoothConnecting] = useState<boolean>(false);
+  const [bluetoothDevice, setBluetoothDevice] = useState<any | null>(null);
+  const [bluetoothError, setBluetoothError] = useState<string | null>(null);
+  const bluetoothCharRef = useRef<any | null>(null);
 
   // ── New feature states ──
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
@@ -247,6 +255,81 @@ export default function SpirometryPage() {
       }
     } catch (err) {
       // Ignore errors during cleanup — port may already be closed
+    }
+  };
+
+  const cleanupBluetooth = async () => {
+    try {
+      if (bluetoothCharRef.current) {
+        try { await bluetoothCharRef.current.stopNotifications(); } catch {}
+        bluetoothCharRef.current.removeEventListener('characteristicvaluechanged', handleBtData);
+        bluetoothCharRef.current = null;
+      }
+      if (bluetoothDevice && bluetoothDevice.gatt?.connected) {
+        bluetoothDevice.gatt.disconnect();
+      }
+    } catch {}
+    setIsBluetoothConnected(false);
+    setBluetoothDevice(null);
+  };
+
+  const handleBtData = (event: Event) => {
+    const target = event.target as any;
+    const value = target.value;
+    if (!value) return;
+    const decoder = new TextDecoder();
+    const text = decoder.decode(value);
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const pressureMatch = trimmed.match(/Pressure:\s*([-\d.]+)/i);
+      const num = pressureMatch ? parseFloat(pressureMatch[1]) : parseFloat(trimmed);
+      if (!isNaN(num)) {
+        setLivePressure(num);
+        if (phaseRef.current === 'out') {
+          rawReadingsRef.current.push(num);
+        }
+      }
+    }
+  };
+
+  const connectBluetooth = async () => {
+    try {
+      if (!('bluetooth' in navigator)) {
+        setBluetoothError('Web Bluetooth API is not supported. Use Chrome on Android or a Chrome extension on desktop.');
+        return;
+      }
+      await cleanupBluetooth();
+      setIsBluetoothConnecting(true);
+      setBluetoothError(null);
+      const UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+      const RX_CHAR = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [{ services: [UART_SERVICE] }],
+        optionalServices: [UART_SERVICE]
+      });
+      setBluetoothDevice(device);
+      device.addEventListener('gattserverdisconnected', () => {
+        setIsBluetoothConnected(false);
+        setBluetoothDevice(null);
+        toast({ title: '🔵 Bluetooth Disconnected', description: 'Device disconnected. Reconnect to continue.' });
+      });
+      const server = await device.gatt!.connect();
+      const service = await server.getPrimaryService(UART_SERVICE);
+      const characteristic = await service.getCharacteristic(RX_CHAR);
+      bluetoothCharRef.current = characteristic;
+      characteristic.addEventListener('characteristicvaluechanged', handleBtData);
+      await characteristic.startNotifications();
+      setIsBluetoothConnected(true);
+      setIsSimulated(false);
+      setIsBluetoothConnecting(false);
+      toast({ title: '🔵 Bluetooth Connected!', description: `Connected to ${device.name || 'spirometer device'}.` });
+    } catch (err: any) {
+      setIsBluetoothConnecting(false);
+      const msg: string = err?.message ?? String(err);
+      if (err?.name === 'NotFoundError' || msg.includes('User cancelled')) return;
+      setBluetoothError(`Bluetooth error: ${msg}`);
     }
   };
 
@@ -488,6 +571,46 @@ export default function SpirometryPage() {
               status: data.overallStatus as "green" | "yellow" | "red",
               isSimulated,
             });
+
+            // --- RPG Progression System Rewards ---
+            const { streakUpdated, currentStreak } = updateStreak();
+            const { leveledUp, newLevel } = addXp(50);
+            
+            // Scan for unlocked achievements
+            const history = loadHistory();
+            const newlyUnlocked = runAchievementScan({
+              totalTests: history.length,
+              streak: currentStreak,
+              sharedQr: false
+            });
+
+            // Display RPG XP Toast
+            toast({
+              title: "🛡️ Test Logged! +50 XP",
+              description: leveledUp
+                ? `LEVELED UP! You are now Level ${newLevel} (${getLevelTitle(newLevel)}) 🎉`
+                : `Your pulmonary progression is expanding!`,
+            });
+
+            // Display Streak Toast
+            if (streakUpdated) {
+              setTimeout(() => {
+                toast({
+                  title: `🔥 Streak Active! ${currentStreak} Days`,
+                  description: "Keep checking in daily to improve your lung strength!",
+                });
+              }, 1200);
+            }
+
+            // Display Achievement Unlock Toasts
+            newlyUnlocked.forEach((ach, index) => {
+              setTimeout(() => {
+                toast({
+                  title: `${ach.icon} Achievement Unlocked!`,
+                  description: `"${ach.title}": ${ach.description} 🏆`,
+                });
+              }, 2000 + (index * 1000));
+            });
           }
           setStage(8);
         },
@@ -500,12 +623,14 @@ export default function SpirometryPage() {
 
   const resetAll = async () => {
     await cleanupSerial();
+    await cleanupBluetooth();
     setStage(1);
     setRoundsTotal(3);
     setAge("");
     setSex("");
     setIsSimulated(false);
     setIsConnected(false);
+    setIsBluetoothConnected(false);
     setCurrentRound(1);
     setPhase('in');
     setRoundsData([]);
@@ -652,39 +777,63 @@ export default function SpirometryPage() {
             ))}
           </div>
         </>
-      ) : !isConnected ? (
+      ) : !isConnected && !isBluetoothConnected ? (
         <>
-          <Usb className="w-16 h-16 text-slate-300 mb-6" />
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <motion.div animate={{ scale: [1, 1.08, 1], opacity: [0.6, 1, 0.6] }} transition={{ duration: 2.5, repeat: Infinity }}>
+              <Usb className="w-10 h-10" style={{ color: "#64748B" }} />
+            </motion.div>
+            <span className="text-slate-300 font-bold text-sm">or</span>
+            <motion.div animate={{ scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }} transition={{ duration: 2.5, repeat: Infinity, delay: 0.4 }}>
+              <Bluetooth className="w-10 h-10" style={{ color: "#3B82F6" }} />
+            </motion.div>
+          </div>
           <h1 className="text-3xl font-semibold mb-2">Connect Your Device</h1>
-          <p className="text-slate-500 mb-10">Connect your ESP32 pressure sensor via USB, then click Connect.</p>
-          {connectError && (
-            <div className="mb-6 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 max-w-sm">
-              {connectError}
+          <p className="text-slate-500 mb-8 max-w-sm text-center">Connect via USB cable or wirelessly via Bluetooth to start your spirometry session.</p>
+          {(connectError || bluetoothError) && (
+            <div className="mb-5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 max-w-sm text-left">
+              {connectError || bluetoothError}
             </div>
           )}
-          <div className="flex flex-col items-center w-full">
-            <Button size="lg" className="w-full max-w-sm mb-4 py-6 text-lg" onClick={connectSerial} data-testid="button-connect-usb">
-              Connect via USB Serial
+          <div className="flex flex-col items-center w-full gap-3 max-w-sm">
+            {/* USB Button */}
+            <Button size="lg" className="w-full py-5 text-base" onClick={connectSerial} data-testid="button-connect-usb">
+              <Usb className="w-5 h-5 mr-2" /> Connect via USB Serial
             </Button>
+            {/* Bluetooth Button */}
             <button
-              className="text-slate-400 hover:text-slate-600 text-sm underline underline-offset-4 mt-4 transition-colors"
-              onClick={() => {
-                setIsSimulated(true);
-                setStage(5);
-              }}
+              className="w-full py-5 text-base font-black rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 text-white"
+              style={{ background: isBluetoothConnecting ? 'linear-gradient(135deg, #2563EB, #6366f1)' : 'linear-gradient(135deg, #3B82F6, #2563EB)', boxShadow: '0 4px 16px rgba(59,130,246,0.3)' }}
+              onClick={connectBluetooth}
+              data-testid="button-connect-bluetooth"
+            >
+              {isBluetoothConnecting ? (
+                <><BluetoothSearching className="w-5 h-5 animate-pulse" /> Scanning for device...</>
+              ) : (
+                <><Bluetooth className="w-5 h-5" /> Connect via Bluetooth</>
+              )}
+            </button>
+            <button
+              className="text-slate-400 hover:text-slate-600 text-sm underline underline-offset-4 transition-colors mt-2"
+              onClick={() => { setIsSimulated(true); setStage(5); }}
               data-testid="button-skip-usb"
             >
               Skip (use simulated data)
             </button>
-            <p className="text-xs text-slate-400 mt-8">Requires Google Chrome or Microsoft Edge for device connection</p>
+            <p className="text-xs text-slate-400">USB/Bluetooth requires Google Chrome or Microsoft Edge</p>
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center">
-          <div className="flex items-center text-emerald-600 mb-8 bg-emerald-50 px-6 py-3 rounded-full">
-            <CheckCircle2 className="w-5 h-5 mr-2" />
-            <span className="font-medium">Device Connected</span>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center text-emerald-600 mb-4 bg-emerald-50 px-6 py-3 rounded-full">
+            {isBluetoothConnected ? <Bluetooth className="w-5 h-5 mr-2" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
+            <span className="font-medium">{isBluetoothConnected ? `Bluetooth: ${bluetoothDevice?.name || 'Device'}` : 'USB Device'} Connected</span>
           </div>
+          {isBluetoothConnected && (
+            <button onClick={cleanupBluetooth} className="text-xs text-red-400 hover:text-red-500 underline transition">
+              Disconnect Bluetooth
+            </button>
+          )}
           <Button size="lg" onClick={() => setStage(5)} data-testid="button-continue-usb">Continue <ArrowRight className="w-4 h-4 ml-2" /></Button>
         </div>
       )}

@@ -17,6 +17,8 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { addXp, getLevelTitle } from "@/lib/gamification";
+import { useToast } from "@/hooks/use-toast";
 
 interface AqiData {
   city: string;
@@ -37,6 +39,7 @@ interface GeocodedCity {
 }
 
 export default function EducationPage() {
+  const { toast } = useToast();
   // --- 🫁 ANATOMY EXPLORER STATE ---
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(null);
   const [hoveredRegion, setHoveredRegion] = React.useState<string | null>(null);
@@ -325,11 +328,21 @@ export default function EducationPage() {
         localStorage.setItem('revive_breathing_total', String(parseInt(localStorage.getItem('revive_breathing_total') || '0', 10) + 1));
         setSessionsToday(newVal);
         setTotalSessions(prev2 => prev2 + 1);
+
+        // --- RPG XP Reward ---
+        const { leveledUp, newLevel } = addXp(10);
+        toast({
+          title: "🧘 Breathing Rehab Complete! +10 XP",
+          description: leveledUp
+            ? `LEVELED UP! You are now Level ${newLevel} (${getLevelTitle(newLevel)}) 🎉`
+            : "Great job completing your breathing rehab session!",
+        });
+
         return 0;
       }
       return next;
     });
-  }, []);
+  }, [toast]);
 
   // Core breath exercise ticking interval
   React.useEffect(() => {
