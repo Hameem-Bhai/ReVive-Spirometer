@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { addXp, getLevelTitle } from "@/lib/gamification";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/lib/theme";
 
 interface AqiData {
   city: string;
@@ -38,8 +39,186 @@ interface GeocodedCity {
   admin1?: string;
 }
 
+function ClinicianReferences() {
+  const [activeTab, setActiveTab] = React.useState<"gold" | "ats" | "diff" | "pharma">("gold");
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  return (
+    <div className="p-4 md:p-8 max-w-5xl mx-auto w-full flex flex-col gap-6 text-left min-h-screen bg-transparent">
+      {/* Page Header */}
+      <div className="border-b pb-5 border-slate-200/60 dark:border-slate-800">
+        <span className="text-[10px] font-black uppercase text-teal-600 tracking-wider">Clinician Library</span>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">Pulmonology Reference Manual</h1>
+        <p className="text-xs text-slate-400">Standardized diagnostic criteria, staging guides, and treatment protocols</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-3">
+        {[
+          { id: "gold" as const, label: "GOLD Staging" },
+          { id: "ats" as const, label: "ATS/ERS Standards" },
+          { id: "diff" as const, label: "Differential Diagnosis" },
+          { id: "pharma" as const, label: "Pharmacotherapy Steps" }
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+              activeTab === t.id
+                ? "bg-[#0f172a] dark:bg-teal-700 text-white border-transparent shadow-sm"
+                : "bg-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-355 border-slate-200 dark:border-slate-800 hover:bg-slate-50"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Contents */}
+      <AnimatePresence mode="wait">
+        {activeTab === "gold" && (
+          <motion.div key="gold" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex flex-col gap-5">
+            <div className="p-5 md:p-6 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-sm flex flex-col gap-4">
+              <div>
+                <h2 className="text-sm font-black text-[#0f172a] dark:text-white uppercase tracking-wider">GOLD Spirometry Classification (COPD)</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Based on post-bronchodilator FEV₁ in patients with FEV₁/FVC &lt; 0.70</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">Severity Stage</th>
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">Post-BD FEV₁ % Predicted</th>
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">Primary Recommendation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { stage: "GOLD 1 (Mild)", limit: "FEV₁ ≥ 80%", advice: "SABA or SAMA PRN. Risk reduction (smoking cessation, vaccination)." },
+                      { stage: "GOLD 2 (Moderate)", limit: "50% ≤ FEV₁ < 80%", advice: "Add daily long-acting bronchodilator (LAMA or LABA). Cardiopulmonary rehab." },
+                      { stage: "GOLD 3 (Severe)", limit: "30% ≤ FEV₁ < 50%", advice: "LAMA + LABA dual therapy. Add ICS if patient has recurrent exacerbations and high blood eosinophils." },
+                      { stage: "GOLD 4 (Very Severe)", limit: "FEV₁ < 30%", advice: "LAMA + LABA + ICS triple therapy. Evaluate for oxygen therapy, surgical volume reduction, or transplant." }
+                    ].map((row, idx) => (
+                      <tr key={idx} className="border-t border-slate-100 dark:border-slate-900">
+                        <td className="py-3 px-3 font-black text-slate-800 dark:text-white whitespace-nowrap">{row.stage}</td>
+                        <td className="py-3 px-3 font-bold text-teal-650 dark:text-teal-400">{row.limit}</td>
+                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400 leading-relaxed">{row.advice}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "ats" && (
+          <motion.div key="ats" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex flex-col gap-5">
+            <div className="p-5 md:p-6 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-sm flex flex-col gap-4">
+              <div>
+                <h2 className="text-sm font-black text-[#0f172a] dark:text-white uppercase tracking-wider">ATS / ERS Spirometry Standardization</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Clinical acceptability and usability check criteria (2019 Update)</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                {[
+                  { title: "1. Acceptability", desc: "No hesitation at start (Back-extrapolated volume EV < 5% of FVC or < 0.10L). No cough or glottis closure in first second." },
+                  { title: "2. Exhalation End", desc: "Exhalation duration > 15s (adults) or clear plateau achieved (change in volume < 0.025L for at least 1.0 second)." },
+                  { title: "3. Reproducibility", desc: "Difference between the two highest FEV₁ and FVC measurements must be ≤ 0.150L (150mL) to confirm test validity." }
+                ].map((item, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+                    <h3 className="text-xs font-black text-slate-800 dark:text-white">{item.title}</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "diff" && (
+          <motion.div key="diff" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex flex-col gap-5">
+            <div className="p-5 md:p-6 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-sm flex flex-col gap-4">
+              <div>
+                <h2 className="text-sm font-black text-[#0f172a] dark:text-white uppercase tracking-wider">Differential Diagnosis Matrix</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Comparison between Asthma, COPD, and Restrictive Disease patterns</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">Feature</th>
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">Asthma</th>
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">COPD</th>
+                      <th className="py-2.5 px-3 font-black text-slate-400 uppercase tracking-wider">Restrictive Disease</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { feat: "Onset Age", asthma: "Usually childhood/early life", copd: "Usually > 40 years of age", rest: "Variable (usually middle/elderly)" },
+                      { feat: "FEV₁/FVC Ratio", asthma: "Reduced (< 70% during attacks)", copd: "Permanently reduced (< 70%)", rest: "Normal or Elevated (> 75%)" },
+                      { feat: "BD Reversibility", asthma: "Significant (> 12% & 200mL)", copd: "Limited / Partially reversible", rest: "Negative response" },
+                      { feat: "Etiology", asthma: "Allergens, genetic, hyperreactivity", copd: "Tobacco smoke, noxious dusts", rest: "Interstitial fibrosis, obesity" }
+                    ].map((row, idx) => (
+                      <tr key={idx} className="border-t border-slate-100 dark:border-slate-900">
+                        <td className="py-3 px-3 font-black text-slate-800 dark:text-white">{row.feat}</td>
+                        <td className="py-3 px-3 text-slate-650 dark:text-slate-350">{row.asthma}</td>
+                        <td className="py-3 px-3 text-slate-650 dark:text-slate-350">{row.copd}</td>
+                        <td className="py-3 px-3 text-slate-500 dark:text-slate-450">{row.rest}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "pharma" && (
+          <motion.div key="pharma" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex flex-col gap-5">
+            <div className="p-5 md:p-6 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-sm flex flex-col gap-4">
+              <div>
+                <h2 className="text-sm font-black text-[#0f172a] dark:text-white uppercase tracking-wider">GINA Asthma Medication Ladder</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Stepwise medical adjustment pathways based on control status</p>
+              </div>
+
+              <div className="flex flex-col gap-3.5 mt-2">
+                {[
+                  { step: "Step 1-2 (Mild)", drug: "As-needed low-dose ICS-formoterol combination inhaler (reliever-only strategy).", indicator: "Symptoms < 4-5 days/week" },
+                  { step: "Step 3 (Moderate)", drug: "Daily low-dose ICS-LABA maintenance inhaler plus as-needed reliever.", indicator: "Symptoms most days, waking ≥ 1/week" },
+                  { step: "Step 4 (Severe)", drug: "Daily medium-dose ICS-LABA maintenance inhaler plus reliever.", indicator: "Symptoms daily, waking, reduced FEV₁" },
+                  { step: "Step 5 (Refractory)", drug: "High-dose ICS-LABA + LAMA add-on (e.g. Tiotropium). Refer for biologic therapies (Anti-IgE, Anti-IL5).", indicator: "Persistent exacerbations despite Step 4" }
+                ].map((row, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-black text-teal-600 dark:text-teal-400 block uppercase">{row.step}</span>
+                      <p className="text-xs font-bold text-slate-800 dark:text-white mt-1 leading-normal">{row.drug}</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-200/40 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 self-start sm:self-center">
+                      {row.indicator}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function EducationPage() {
+  const isClinician = localStorage.getItem("revive_clinician_mode") === "true";
   const { toast } = useToast();
+
+  if (isClinician) {
+    return <ClinicianReferences />;
+  }
+
   // --- 🫁 ANATOMY EXPLORER STATE ---
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(null);
   const [hoveredRegion, setHoveredRegion] = React.useState<string | null>(null);

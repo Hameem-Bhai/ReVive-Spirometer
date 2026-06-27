@@ -66,10 +66,23 @@ interface NavigationShellProps {
 }
 
 export default function NavigationShell({ children }: NavigationShellProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isClinicianMode, setIsClinicianMode] = React.useState(false);
+  const [isClinicianMode, setIsClinicianMode] = React.useState(() => localStorage.getItem("revive_clinician_mode") === "true");
   const [showMoreMenu, setShowMoreMenu] = React.useState(false);
+
+  const toggleClinicianMode = () => {
+    setIsClinicianMode(prev => {
+      const next = !prev;
+      localStorage.setItem("revive_clinician_mode", String(next));
+      if (next) {
+        setLocation("/clinician");
+      } else {
+        setLocation("/");
+      }
+      return next;
+    });
+  };
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
   const [profile, setProfile] = React.useState(() => loadProfile());
@@ -200,7 +213,7 @@ export default function NavigationShell({ children }: NavigationShellProps) {
 
             {/* ── Patient / Clinician Portal Toggle (Hidden on mobile, moved to More drawer) ── */}
             <motion.button
-              onClick={() => setIsClinicianMode(v => !v)}
+              onClick={toggleClinicianMode}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               title={isClinicianMode ? "Switch to Patient Mode" : "Switch to Clinician Mode"}
@@ -391,7 +404,7 @@ export default function NavigationShell({ children }: NavigationShellProps) {
                   {/* Toggle */}
                   <button
                     onClick={() => {
-                      setIsClinicianMode(v => !v);
+                      toggleClinicianMode();
                       setShowMoreMenu(false);
                     }}
                     className="relative w-12 h-6.5 rounded-full transition-all duration-300 cursor-pointer shadow-inner"

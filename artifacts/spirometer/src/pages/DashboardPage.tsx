@@ -71,9 +71,198 @@ interface AqiState {
   windDirection?: number;
 }
 
+function ClinicianPatientRecords() {
+  const [search, setSearch] = React.useState("");
+  const [filterZone, setFilterZone] = React.useState("all");
+
+  const patients = [
+    { id: 1, name: "Yernar Akhmetov", age: 58, sex: "male", location: "Almaty", status: "red", lastTest: "2 hours ago", compliance: "High", ratio: "62.4%", change: "-3.2%" },
+    { id: 2, name: "Saniya Omarova", age: 47, sex: "female", location: "Karaganda", status: "yellow", lastTest: "1 day ago", compliance: "Moderate", ratio: "69.1%", change: "-1.5%" },
+    { id: 3, name: "Dmitry Morozov", age: 64, sex: "male", location: "Almaty", status: "green", lastTest: "3 hours ago", compliance: "High", ratio: "78.4%", change: "+0.5%" },
+    { id: 4, name: "Assem Kadyrova", age: 52, sex: "female", location: "Astana", status: "green", lastTest: "3 days ago", compliance: "Low", ratio: "75.2%", change: "+0.1%" },
+    { id: 5, name: "Bakhytzhan Nurgaliev", age: 71, sex: "male", location: "Karaganda", status: "red", lastTest: "1 day ago", compliance: "Moderate", ratio: "58.2%", change: "-4.1%" },
+    { id: 6, name: "Irina Petrova", age: 39, sex: "female", location: "Almaty", status: "green", lastTest: "4 hours ago", compliance: "High", ratio: "81.0%", change: "+1.2%" },
+  ];
+
+  const recentSweeps = [
+    { name: "Yernar Akhmetov", ratio: "62.4%", time: "2 hours ago", status: "red", FEV1: "2.5L", FVC: "4.0L", postBD: false },
+    { name: "Dmitry Morozov", ratio: "78.4%", time: "3 hours ago", status: "green", FEV1: "3.6L", FVC: "4.6L", postBD: true },
+    { name: "Saniya Omarova", ratio: "69.1%", time: "1 day ago", status: "yellow", FEV1: "3.0L", FVC: "4.3L", postBD: false },
+    { name: "Bakhytzhan Nurgaliev", ratio: "58.2%", time: "1 day ago", status: "red", FEV1: "2.3L", FVC: "3.9L", postBD: false },
+    { name: "Irina Petrova", ratio: "81.0%", time: "1 day ago", status: "green", FEV1: "3.8L", FVC: "4.7L", postBD: true },
+  ];
+
+  const filtered = patients.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.location.toLowerCase().includes(search.toLowerCase());
+    const matchesZone = filterZone === "all" || p.status === filterZone;
+    return matchesSearch && matchesZone;
+  });
+
+  return (
+    <div className="p-4 md:p-8 max-w-6xl mx-auto w-full flex flex-col gap-6 text-left min-h-screen bg-transparent">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-5 border-slate-200/60 dark:border-slate-800 gap-4">
+        <div>
+          <span className="text-[10px] font-black uppercase text-[#14b8a6] tracking-wider">Patient Records Registry</span>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">Clinical Diagnostics Database</h1>
+          <p className="text-xs text-slate-400">Search patient roster history, compliance indicators, and test logs</p>
+        </div>
+        <button 
+          onClick={() => window.print()}
+          className="flex items-center gap-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition active:scale-95 shadow-sm"
+        >
+          <Printer className="w-4 h-4" /> Export Audit Log
+        </button>
+      </div>
+
+      {/* Analytics Summary Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Active Profiles", value: "6 Patients", sub: "Fully registered", color: "text-[#0f172a] dark:text-white" },
+          { label: "Alert Ratio", value: "33.3%", sub: "2 Critical (Red)", color: "text-red-500" },
+          { label: "Avg Compliance", value: "83.3%", sub: "High average", color: "text-emerald-500" },
+          { label: "Latest Activity", value: "2h ago", sub: "Yernar Akhmetov", color: "text-[#14b8a6]" }
+        ].map((stat, idx) => (
+          <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 flex flex-col gap-1 shadow-sm">
+            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">{stat.label}</span>
+            <span className={`text-xl font-black ${stat.color}`}>{stat.value}</span>
+            <span className="text-[10px] text-slate-400 leading-none">{stat.sub}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Roster Search / Database (Left 8 cols) */}
+        <div className="lg:col-span-8 flex flex-col gap-4">
+          
+          {/* Search bar */}
+          <div className="p-4 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex flex-col sm:flex-row gap-3 items-center shadow-sm">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search database by patient name or city..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-10 pr-4 text-xs outline-none focus:border-indigo-500 dark:text-slate-200"
+              />
+            </div>
+            <select
+              value={filterZone}
+              onChange={(e) => setFilterZone(e.target.value)}
+              className="w-full sm:w-44 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3.5 text-xs outline-none text-slate-700 dark:text-slate-200 cursor-pointer"
+            >
+              <option value="all">All Status Zones</option>
+              <option value="red">Red Alerts (Obstructive)</option>
+              <option value="yellow">Yellow Alerts (Borderline)</option>
+              <option value="green">Green (Normal / Stable)</option>
+            </select>
+          </div>
+
+          {/* Database Grid */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
+                    <th className="py-3 px-4 font-black text-slate-400 uppercase tracking-wider">Patient Name</th>
+                    <th className="py-3 px-4 font-black text-slate-400 uppercase tracking-wider">Info</th>
+                    <th className="py-3 px-4 font-black text-slate-400 uppercase tracking-wider text-center">Status</th>
+                    <th className="py-3 px-4 font-black text-slate-400 uppercase tracking-wider">Compliance</th>
+                    <th className="py-3 px-4 font-black text-slate-400 uppercase tracking-wider">Ratio</th>
+                    <th className="py-3 px-4"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-900">
+                  {filtered.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-all">
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-slate-800 dark:text-white block">{p.name}</span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">ID: #000{p.id}</span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-550 dark:text-slate-400 font-medium">
+                        {p.age} yrs • {p.location}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                          p.status === "red" 
+                            ? "bg-red-55/60 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-950/40" 
+                            : p.status === "yellow" 
+                            ? "bg-amber-55/60 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-955/40" 
+                            : "bg-emerald-55/60 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-950/40"
+                        }`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-slate-650 dark:text-slate-350">{p.compliance}</td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-700 dark:text-slate-200">{p.ratio}</td>
+                      <td className="py-3.5 px-4 text-right">
+                        <Link href={`/clinician/patient/${p.id}`}>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black text-[#14b8a6] hover:text-[#0f766e] cursor-pointer uppercase tracking-wider">
+                            View Profile <ChevronRight className="w-3.5 h-3.5" />
+                          </span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Recent Activity Feed (Right 4 cols) */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="p-5 md:p-6 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-sm flex flex-col gap-4">
+            <div>
+              <h2 className="text-sm font-black text-[#0f172a] dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-indigo-500 animate-pulse" /> Recent Clinic Sweeps
+              </h2>
+              <p className="text-[10px] text-slate-400 mt-0.5">Real-time incoming diagnostics feed</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {recentSweeps.map((sweep, idx) => (
+                <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col gap-1.5">
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-bold text-slate-850 dark:text-white leading-none">{sweep.name}</span>
+                    <span className="text-[9px] text-slate-400">{sweep.time}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <span className="text-[10px] font-mono text-slate-500">FEV₁/FVC: <strong>{sweep.ratio}</strong></span>
+                      <span className="text-[10px] font-mono text-slate-400">({sweep.FEV1})</span>
+                    </div>
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full ${
+                      sweep.postBD 
+                        ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20" 
+                        : "bg-slate-200/50 dark:bg-slate-800 text-slate-500"
+                    }`}>
+                      {sweep.postBD ? "Post-BD" : "Pre-BD"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
 export default function DashboardPage() {
+  const isClinician = localStorage.getItem("revive_clinician_mode") === "true";
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  if (isClinician) {
+    return <ClinicianPatientRecords />;
+  }
 
   const [symptomLogSuccess, setSymptomLogSuccess] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
