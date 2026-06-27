@@ -7,6 +7,7 @@ import SpirometryPage from "@/pages/SpirometryPage";
 import LandingPage from "@/pages/LandingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ClinicianPage from "@/pages/ClinicianPage";
+import PatientDetailPage from "@/pages/PatientDetailPage";
 import EducationPage from "@/pages/EducationPage";
 import ChatbotPage from "@/pages/ChatbotPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -54,6 +55,14 @@ function Router() {
         {() => (
           <NavigationShell>
             <ClinicianPage />
+          </NavigationShell>
+        )}
+      </Route>
+
+      <Route path="/clinician/patient/:id">
+        {(params) => (
+          <NavigationShell>
+            <PatientDetailPage id={params.id} />
           </NavigationShell>
         )}
       </Route>

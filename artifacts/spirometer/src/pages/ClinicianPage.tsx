@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation, Link } from "wouter";
 import {
   LineChart,
   Line,
@@ -68,6 +69,7 @@ const getAiInsight = (p: typeof mockPatients[0]) => {
 export default function ClinicianPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
@@ -319,7 +321,7 @@ export default function ClinicianPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredPatients.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setSelectedPatientId(p.id)}>
+                    <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 hover:shadow-[0_0_15px_rgba(20,184,166,0.08)] transition-all cursor-pointer" onClick={() => setLocation(`/clinician/patient/${p.id}`)}>
                       <td className="py-4 px-6">
                         <span className="font-bold text-slate-800 text-sm block">{p.name}</span>
                       </td>
@@ -369,7 +371,7 @@ export default function ClinicianPage() {
                   <motion.div
                     key={p.id}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedPatientId(p.id)}
+                    onClick={() => setLocation(`/clinician/patient/${p.id}`)}
                     className={`p-4 rounded-2xl border text-left cursor-pointer flex flex-col gap-3.5 transition-all shadow-[0_2px_8px_rgba(27,45,107,0.02)] ${statusStyles.bg} ${statusStyles.border}`}
                     style={{
                       background: isDark ? "rgba(30, 41, 59, 0.25)" : undefined
@@ -444,7 +446,12 @@ export default function ClinicianPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 bg-transparent">
+                <Link href={`/clinician/patient/imported?import=${getImportParam()}`}>
+                  <span className="px-4.5 py-2.5 rounded-xl font-black text-xs bg-teal-650 dark:bg-teal-700 text-white hover:bg-teal-600 transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-teal-600/10 cursor-pointer">
+                    <TrendingUp className="w-3.5 h-3.5" /> View Full Profile
+                  </span>
+                </Link>
                 <button
                   onClick={() => {
                     toast({ title: "Patient Saved", description: "Successfully saved patient to monitoring roster." });
