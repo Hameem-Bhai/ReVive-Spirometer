@@ -72,8 +72,8 @@ export default function ProfilePage() {
 
     // Draw background gradient
     const grad = ctx.createLinearGradient(0, 0, 600, 420);
-    grad.addColorStop(0, "#0F2557");
-    grad.addColorStop(1, "#1B2D6B");
+    grad.addColorStop(0, "#0f172a");
+    grad.addColorStop(1, "#1e2937");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 600, 420);
 
@@ -87,7 +87,7 @@ export default function ProfilePage() {
     ctx.font = "bold 13px sans-serif";
     ctx.fillText("ReVive Spirometry", 30, 40);
 
-    ctx.fillStyle = "#22d3ee";
+    ctx.fillStyle = "#14b8a6";
     ctx.font = "bold 9px monospace";
     ctx.fillText("EMERGENCY MEDICAL PASS", 30, 55);
 
@@ -101,8 +101,8 @@ export default function ProfilePage() {
 
     // Circle Avatar background
     const avatarGrad = ctx.createLinearGradient(30, 80, 70, 120);
-    avatarGrad.addColorStop(0, "#06b6d4");
-    avatarGrad.addColorStop(1, "#3b82f6");
+    avatarGrad.addColorStop(0, "#14b8a6");
+    avatarGrad.addColorStop(1, "#0f172a");
     ctx.fillStyle = avatarGrad;
     ctx.beginPath();
     ctx.arc(55, 100, 20, 0, 2 * Math.PI);
@@ -126,7 +126,7 @@ export default function ProfilePage() {
 
     // Two Column Grid
     // Left: Emergency Contact
-    ctx.fillStyle = "#22d3ee";
+    ctx.fillStyle = "#14b8a6";
     ctx.font = "bold 10px monospace";
     ctx.fillText("EMERGENCY CONTACT", 30, 155);
 
@@ -147,7 +147,7 @@ export default function ProfilePage() {
     const dateText = lastRecord ? new Date(lastRecord.date).toLocaleDateString() : new Date().toLocaleDateString();
     const statusText = lastRecord ? lastRecord.status.toUpperCase() : "GREEN";
 
-    ctx.fillStyle = "#22d3ee";
+    ctx.fillStyle = "#14b8a6";
     ctx.font = "bold 10px monospace";
     ctx.fillText("LAST PFT BASELINE", 250, 155);
 
@@ -174,7 +174,7 @@ export default function ProfilePage() {
     ctx.fillText(statusLabelText, 42, 231);
 
     // Emergency Action Plan
-    ctx.fillStyle = "#22d3ee";
+    ctx.fillStyle = "#14b8a6";
     ctx.font = "bold 10px monospace";
     ctx.fillText("EMERGENCY ACTION PLAN", 30, 265);
 
@@ -485,10 +485,10 @@ export default function ProfilePage() {
         </div>
 
         {/* The Passport Card itself */}
-        <div className="rounded-3xl p-6 text-white relative overflow-hidden flex flex-col sm:flex-row gap-6 shadow-xl border border-blue-950/20 print:border print:text-black print:bg-white print:shadow-none print:rounded-none"
+        <div className="rounded-3xl p-6 text-white relative overflow-hidden flex flex-col sm:flex-row gap-6 shadow-xl border border-[#1e2937]/50 print:border print:text-black print:bg-white print:shadow-none print:rounded-none"
           style={{
-            background: "linear-gradient(135deg, #0F2557 0%, #1B2D6B 100%)",
-            boxShadow: "0 10px 30px -5px rgba(27,45,107,0.3)"
+            background: "linear-gradient(135deg, #0f172a 0%, #1e2937 100%)",
+            boxShadow: "0 10px 30px -5px rgba(15,23,42,0.4)"
           }}
           id="emergency-pass-card"
         >
@@ -496,13 +496,13 @@ export default function ProfilePage() {
           <div className="flex-1 flex flex-col justify-between gap-4 text-left">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 print:text-cyan-700 print:bg-cyan-50 print:border-cyan-200">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 print:text-teal-700 print:bg-teal-50 print:border-teal-200">
                   Emergency Medical Pass
                 </span>
                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest print:text-slate-600">ReVive Spirometry</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0 bg-gradient-to-br from-cyan-400 to-blue-500">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0 bg-gradient-to-br from-teal-400 to-teal-600">
                   {(profile.name || "Hameem Bhai").split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
                 <div>
@@ -516,7 +516,7 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/10 pt-3 print:border-slate-200">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300 block mb-1 print:text-slate-500">Emergency Contact</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-teal-300 block mb-1 print:text-slate-500">Emergency Contact</span>
                 <p className="text-xs font-bold leading-tight">{profile.emergencyName || "Basit"}</p>
                 <p className="text-[11px] text-slate-400 font-mono mt-0.5 print:text-slate-600">{profile.emergencyPhone || "01581-597001"}</p>
               </div>
@@ -530,7 +530,7 @@ export default function ProfilePage() {
                 
                 return (
                   <div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-cyan-300 block mb-1 print:text-slate-500">Last PFT Baseline</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-teal-300 block mb-1 print:text-slate-500">Last PFT Baseline</span>
                     <p className="text-xs font-bold leading-tight">FEV₁: {fev1Val} L | FVC: {fvcVal} L</p>
                     <p className="text-[11px] text-slate-400 font-mono mt-0.5 print:text-slate-600">Ratio: {ratioText} (Optimal)</p>
                   </div>
@@ -566,7 +566,7 @@ export default function ProfilePage() {
                   {/* Action plan list */}
                   <div className="p-3.5 rounded-2xl text-[11px] leading-relaxed border border-white/10 flex flex-col gap-1.5"
                     style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <span className="font-black text-cyan-300 uppercase tracking-widest block mb-1">Emergency Action Plan</span>
+                    <span className="font-black text-teal-300 uppercase tracking-widest block mb-1">Emergency Action Plan</span>
                     {plans.map(p => (
                       <div key={p.label} className="flex gap-2">
                         <span className={`font-black shrink-0 ${p.color}`}>{p.label}</span>
@@ -614,7 +614,7 @@ export default function ProfilePage() {
                       }}
                     />
                   </div>
-                  <span className="text-[9.5px] font-black uppercase tracking-widest text-slate-400 text-center leading-normal max-w-[140px] print:text-slate-600">Scan QR Code for Full Medical History</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center leading-normal max-w-[140px] print:text-slate-600">Scan QR Code for Full Medical History</span>
                   
                   {/* Desktop Powered By watermark */}
                   <div className="text-center text-[9px] text-slate-500 font-semibold mt-2 hidden sm:block">
@@ -638,7 +638,7 @@ export default function ProfilePage() {
           <button
             onClick={downloadPassportAsImage}
             className="flex-1 py-3 rounded-xl text-xs font-black text-white flex items-center justify-center gap-2 transition hover:opacity-90 active:scale-95 cursor-pointer"
-            style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 4px 16px rgba(27,45,107,0.25)" }}
+            style={{ background: "linear-gradient(135deg, #14b8a6, #0d9488)", boxShadow: "0 4px 16px rgba(20,184,166,0.25)" }}
           >
             <Share2 className="w-4 h-4" /> Download Pocket Pass (PNG)
           </button>
