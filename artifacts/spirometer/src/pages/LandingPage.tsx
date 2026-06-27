@@ -447,13 +447,13 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-transparent" style={{ color: "#1B2D6B" }}>
+    <div className="min-h-screen relative overflow-hidden bg-transparent text-slate-700 dark:text-slate-300">
       
       {/* ── Ambient Background Glows ────────────────── */}
       <div className="absolute top-[-10%] right-[-10%] w-[700px] h-[700px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(37,99,235,0.08), transparent 65%)", filter: "blur(50px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(20,184,166,0.08), transparent 65%)", filter: "blur(50px)" }} />
       <div className="absolute bottom-[10%] left-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(5,150,105,0.06), transparent 65%)", filter: "blur(55px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(16,185,129,0.06), transparent 65%)", filter: "blur(55px)" }} />
       <div className="absolute top-[40%] left-[40%] w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(124,58,237,0.04), transparent 65%)", filter: "blur(70px)" }} />
 
@@ -467,14 +467,9 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: -10 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.5 }}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-[10px] font-black uppercase tracking-widest bg-white border"
-              style={{ 
-                borderColor: "rgba(27,45,107,0.1)", 
-                color: "#1B2D6B",
-                boxShadow: "0 2px 12px rgba(27,45,107,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" 
-              }}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[#0f172a] dark:text-slate-300 shadow-sm"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
               <span>Clinical-grade diagnostics</span>
             </motion.div>
 
@@ -482,8 +477,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-black font-serif tracking-tight leading-[1.05] mb-6"
-              style={{ color: "#1B2D6B" }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-black font-serif tracking-tight leading-[1.05] mb-6 text-[#0f172a] dark:text-white"
             >
               {profile.name ? (
                 <>
@@ -502,8 +496,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base sm:text-lg leading-relaxed mb-8 max-w-lg"
-              style={{ color: "#475569" }}
+              className="text-base sm:text-lg leading-relaxed mb-8 max-w-lg text-slate-600 dark:text-slate-400"
             >
               {profile.name ? (
                 `Your clinical portal is ready. You have completed ${history.length} breathing tests. Review your FEV1/FVC metrics and check today's air quality overlay below.`
@@ -520,15 +513,14 @@ export default function LandingPage() {
             >
               <Link href={profile.name ? "/dashboard" : "/profile"}>
                 <span className="px-7 py-3.5 text-xs font-black uppercase tracking-widest text-white rounded-2xl cursor-pointer transition-all duration-300 active:scale-95 text-center flex items-center justify-center gap-2 group hover:-translate-y-0.5"
-                  style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 6px 20px rgba(27,45,107,0.35), 0 12px 40px rgba(37,99,235,0.2)" }}>
+                  style={{ background: "linear-gradient(135deg, #0f172a, #14b8a6)", boxShadow: "0 6px 20px rgba(15,23,42,0.15), 0 12px 40px rgba(20,184,166,0.1)" }}>
                   <span>{profile.name ? "Enter Dashboard" : "Get Started"}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>
               <Link href="/test">
-                <span className="px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl cursor-pointer border hover:bg-slate-50 transition-all duration-300 active:scale-95 text-center flex items-center justify-center gap-2"
-                  style={{ background: "#FFFFFF", borderColor: "rgba(27,45,107,0.12)", color: "#1B2D6B", boxShadow: "0 4px 20px rgba(27,45,107,0.03)" }}>
-                  <Activity className="w-4 h-4 text-blue-600 animate-pulse" />
+                <span className="px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl cursor-pointer border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-all duration-300 active:scale-95 text-center flex items-center justify-center gap-2 shadow-sm">
+                  <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-pulse" />
                   <span>Run Breathing Test</span>
                 </span>
               </Link>
@@ -543,12 +535,11 @@ export default function LandingPage() {
             className="lg:col-span-6 relative h-[380px] md:h-[480px] w-full"
           >
             {/* Ambient Background Panel */}
-            <div className="absolute inset-0 rounded-[2.5rem] border shadow-[0_20px_50px_rgba(27,45,107,0.05)] bg-white overflow-hidden p-2 flex items-center justify-center"
-              style={{ borderColor: "rgba(27,45,107,0.06)" }}>
+            <div className="absolute inset-0 rounded-[2.5rem] border shadow-[0_20px_50px_rgba(0,0,0,0.03)] bg-white dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/80 overflow-hidden p-2 flex items-center justify-center">
               
               <Suspense fallback={
                 <div className="flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  <Loader2 className="w-8 h-8 animate-spin text-teal-600 dark:text-teal-400" />
                   <span className="text-xs font-bold text-slate-400">Loading 3D Respiratory Canvas...</span>
                 </div>
               }>
@@ -557,38 +548,35 @@ export default function LandingPage() {
 
               {/* Glassmorphic UI Widgets Overlaid */}
               {/* Widget 1: Lung Capacity */}
-              <div className="absolute top-6 left-6 p-3.5 rounded-2xl border backdrop-blur-md flex flex-col gap-0.5 shadow-sm"
-                style={{ background: "rgba(255, 255, 255, 0.85)", borderColor: "rgba(27,45,107,0.06)" }}>
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Expiratory Capacity</span>
-                <span className="text-sm font-black text-slate-900 flex items-center gap-1">
+              <div className="absolute top-6 left-6 p-3.5 rounded-2xl border backdrop-blur-md flex flex-col gap-0.5 shadow-sm bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800/50">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Expiratory Capacity</span>
+                <span className="text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
                   <span>94.2%</span>
-                  <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">Optimal</span>
+                  <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/20">Optimal</span>
                 </span>
               </div>
 
               {/* Widget 2: Sensor Status */}
-              <div className="absolute top-6 right-6 px-3.5 py-2 rounded-full border backdrop-blur-md flex items-center gap-2 shadow-sm"
-                style={{ background: "rgba(255, 255, 255, 0.85)", borderColor: "rgba(27,45,107,0.06)" }}>
+              <div className="absolute top-6 right-6 px-3.5 py-2 rounded-full border backdrop-blur-md flex items-center gap-2 shadow-sm bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800/50">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">Sensor Connected</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">Sensor Connected</span>
               </div>
 
               {/* Widget 3: Live Flow Rate */}
-              <div className="absolute bottom-6 left-6 right-6 p-4 rounded-2xl border backdrop-blur-md flex items-center justify-between shadow-sm"
-                style={{ background: "rgba(255, 255, 255, 0.85)", borderColor: "rgba(27,45,107,0.06)" }}>
+              <div className="absolute bottom-6 left-6 right-6 p-4 rounded-2xl border backdrop-blur-md flex items-center justify-between shadow-sm bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                  <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/20 flex items-center justify-center text-teal-600 dark:text-teal-400">
                     <Activity className="w-4.5 h-4.5" />
                   </div>
                   <div>
-                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 block leading-none mb-0.5">Live Exhalation Speed</span>
-                    <span className="text-xs font-black text-slate-950">460 Liters/min (PEF)</span>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block leading-none mb-0.5">Live Exhalation Speed</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white">460 Liters/min (PEF)</span>
                   </div>
                 </div>
-                <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">Pulsing</span>
+                <span className="text-[9px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 px-2.5 py-1 rounded-full border border-teal-100 dark:border-teal-900/20">Pulsing</span>
               </div>
 
             </div>
@@ -598,9 +586,9 @@ export default function LandingPage() {
       </section>
 
       {/* ── TRUST STRIP ─────────────────────────────── */}
-      <section className="border-y bg-white/50 backdrop-blur-sm" style={{ borderColor: "rgba(27,45,107,0.06)" }}>
+      <section className="border-y bg-white/50 dark:bg-slate-900/30 backdrop-blur-sm border-slate-200/50 dark:border-slate-800/80">
         <div className="max-w-7xl mx-auto px-6 py-6 md:py-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Clinical Integrity Guaranteed</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Clinical Integrity Guaranteed</span>
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 text-slate-500">
             {[
               { icon: Shield, label: "Local-First Privacy" },
@@ -611,8 +599,8 @@ export default function LandingPage() {
               const Icon = t.icon;
               return (
                 <div key={t.label} className="flex items-center gap-2">
-                  <Icon className="w-4 h-4 text-blue-600/80" />
-                  <span className="text-xs font-bold text-[#1B2D6B]">{t.label}</span>
+                  <Icon className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{t.label}</span>
                 </div>
               );
             })}
@@ -623,11 +611,11 @@ export default function LandingPage() {
       {/* ── BENTO GRID FEATURES ─────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 md:py-28">
         <div className="text-center mb-16">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-2">Next-Gen Spirometry</span>
-          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight" style={{ color: "#1B2D6B" }}>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 block mb-2">Next-Gen Spirometry</span>
+          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight text-[#0f172a] dark:text-white">
             Luxury clinical tools, localized.
           </h2>
-          <p className="text-sm mt-3 text-slate-500 max-w-lg mx-auto">
+          <p className="text-sm mt-3 text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
             Experience an elegant suite of lung diagnostic utilities built entirely on local storage and zero-latency hardware communication.
           </p>
         </div>
@@ -638,11 +626,11 @@ export default function LandingPage() {
           {/* Card 1: Interactive AQI (7 Columns on md) */}
           <div className="md:col-span-7 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
-              <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mb-5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-5">
                 <Wind className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-black mb-1">Global Air Quality Search</h3>
-              <p className="text-xs text-slate-500 max-w-md leading-relaxed mb-6">
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-6">
                 Query and display real-time AQI and particulate measurements (PM2.5, PM10) from open meteorology stations anywhere in the world.
               </p>
 
@@ -655,14 +643,13 @@ export default function LandingPage() {
                     placeholder="Enter city (e.g. Dhaka, Almaty, London)..."
                     value={aqiQuery}
                     onChange={(e) => setAqiQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border outline-none bg-slate-50 focus:bg-white transition"
-                    style={{ borderColor: "rgba(27,45,107,0.1)", color: "#1B2D6B" }}
+                    className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border outline-none bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:bg-white transition"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={aqiLoading}
-                  className="px-4 py-2 text-xs font-black text-white rounded-xl bg-blue-600 hover:bg-blue-700 transition flex items-center gap-1.5"
+                  className="px-4 py-2 text-xs font-black text-white rounded-xl bg-teal-600 hover:bg-teal-700 transition flex items-center gap-1.5"
                 >
                   {aqiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                   <span>Search</span>
@@ -672,19 +659,15 @@ export default function LandingPage() {
               {/* Live AQI Results */}
               {aqiResult && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                  className="p-3.5 rounded-xl border flex items-center justify-between"
-                  style={{ 
-                    background: aqiResult.aqi <= 50 ? "rgba(5,150,105,0.04)" : "rgba(217,119,6,0.04)",
-                    borderColor: aqiResult.aqi <= 50 ? "rgba(5,150,105,0.1)" : "rgba(217,119,6,0.1)"
-                  }}
+                  className="p-3.5 rounded-xl border flex items-center justify-between bg-teal-500/5 dark:bg-teal-500/10 border-teal-500/20 dark:border-teal-500/30"
                 >
                   <div>
                     <span className="text-[10px] font-black uppercase text-slate-400 block">Location</span>
-                    <span className="text-xs font-black text-slate-900">{aqiResult.city}</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white">{aqiResult.city}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-black flex items-center gap-1.5 justify-end"
-                      style={{ color: aqiResult.aqi <= 50 ? "#059669" : "#D97706" }}>
+                      style={{ color: aqiResult.aqi <= 50 ? "#10b981" : "#f59e0b" }}>
                       <Wind className="w-3.5 h-3.5" /> AQI {aqiResult.aqi} ({aqiResult.label})
                     </span>
                     <span className="text-[9px] text-slate-400 block mt-0.5">PM2.5: {aqiResult.pm2_5} µg/m³</span>
@@ -700,21 +683,21 @@ export default function LandingPage() {
           {/* Card 2: 3D Breathprint (5 Columns on md) */}
           <div className="md:col-span-5 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-5">
+              <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/20 flex items-center justify-center text-teal-600 dark:text-teal-400 mb-5">
                 <Activity className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-black mb-1">3D Breathprint</h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
                 Your flow rate and lung exhalation speed rendered as a dynamic time-series wave overlay. Track round-to-round consistency.
               </p>
 
               {/* Decorative dynamic wave visual */}
-              <div className="h-16 w-full flex items-end gap-1 px-1 bg-slate-50/50 rounded-xl border border-slate-100/50 overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-50/30 to-transparent pointer-events-none" />
+              <div className="h-16 w-full flex items-end gap-1 px-1 bg-slate-50/50 dark:bg-slate-900/20 rounded-xl border border-slate-100/50 dark:border-slate-800/20 overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-teal-500/10 to-transparent pointer-events-none" />
                 {[30, 45, 25, 60, 80, 95, 65, 40, 75, 90, 100, 70, 45, 30, 20, 45, 60, 35, 15, 25, 40].map((h, i) => (
                   <motion.div 
                     key={i} 
-                    className="flex-1 bg-blue-500 rounded-t"
+                    className="flex-1 bg-teal-500 dark:bg-teal-400 rounded-t"
                     initial={{ height: 0 }}
                     animate={{ height: `${h}%` }}
                     transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", delay: i * 0.05 }}
@@ -728,27 +711,27 @@ export default function LandingPage() {
           {/* Card 3: Smart Posture Coach (5 Columns on md) */}
           <div className="md:col-span-5 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-5">
                 <Sparkles className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-black mb-1">Smart Posture Coach</h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
                 Receive interactive instructions and animated visual checklists that guide you to keep your neck straight and back aligned for FEV1 accuracy.
               </p>
 
               {/* Interactive checklist mock */}
-              <div className="flex flex-col gap-2 bg-emerald-50/20 p-3.5 rounded-xl border border-emerald-100/20">
+              <div className="flex flex-col gap-2 bg-emerald-50/20 dark:bg-emerald-950/10 p-3.5 rounded-xl border border-emerald-100/20 dark:border-emerald-900/10">
                 <div className="flex items-center gap-2 text-xs">
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span className="font-bold text-slate-700">Neck erect (no chin tuck)</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Neck erect (no chin tuck)</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span className="font-bold text-slate-700">Shoulders relaxed & retracted</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Shoulders relaxed & retracted</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span className="font-bold text-slate-700">Back straight, feet flat</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Back straight, feet flat</span>
                 </div>
               </div>
             </div>
@@ -758,29 +741,28 @@ export default function LandingPage() {
           {/* Card 4: Zero-Trust Export (7 Columns on md) */}
           <div className="md:col-span-7 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
-              <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 mb-5">
+              <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-5">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-black mb-1">Zero-Trust Clinical Export</h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
                 Generate formatted PDF report sheets right in your browser. All computations run on-device, meaning your private patient files are never shared or processed by external servers.
               </p>
 
               {/* Mock clinical print section */}
-              <div className="p-4 rounded-xl border border-dashed flex items-center justify-between"
-                style={{ background: "rgba(124,58,237,0.01)", borderColor: "rgba(124,58,237,0.15)" }}>
+              <div className="p-4 rounded-xl border border-dashed flex items-center justify-between bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/20 dark:border-purple-500/30">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
                     <FileText className="w-4.5 h-4.5" />
                   </div>
                   <div>
-                    <span className="text-xs font-black text-slate-900 block mb-0.5">Spirometry_Report.pdf</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block mb-0.5">Spirometry_Report.pdf</span>
                     <span className="text-[9px] text-slate-400">PDF Report Document · 128 KB</span>
                   </div>
                 </div>
                 <button
                   onClick={() => alert("Enter the Dashboard and click 'Export PDF' to print your real history!")}
-                  className="p-2.5 rounded-xl hover:bg-purple-50 text-purple-600 transition border border-purple-100"
+                  className="p-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-950 text-purple-600 dark:text-purple-400 transition border border-purple-100 dark:border-purple-900/30"
                 >
                   <Download className="w-4 h-4" />
                 </button>
@@ -793,13 +775,13 @@ export default function LandingPage() {
       </section>
 
       {/* ── CLINICIAN & PATIENT TESTIMONIALS ────────── */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 border-t" style={{ borderColor: "rgba(27,45,107,0.06)" }}>
+      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 border-t border-slate-200/50 dark:border-slate-800/80">
         <div className="text-center mb-16">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-2">Global Endorsements</span>
-          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight" style={{ color: "#1B2D6B" }}>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-650 dark:text-teal-400 block mb-2">Global Endorsements</span>
+          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight text-[#0f172a] dark:text-white">
             What doctors and patients say.
           </h2>
-          <p className="text-sm mt-3 text-slate-500 max-w-lg mx-auto">
+          <p className="text-sm mt-3 text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
             Trusted by top-tier medical professionals and respiratory patients for zero-latency monitoring and compliance.
           </p>
         </div>
@@ -835,14 +817,14 @@ export default function LandingPage() {
             >
               <div>
                 <span className="text-xs text-amber-500 mb-4 block">{t.rating}</span>
-                <p className="text-xs italic leading-relaxed text-[#1B2D6B] font-medium opacity-90 mb-6">
+                <p className="text-xs italic leading-relaxed text-[#0f172a] dark:text-slate-200 font-medium opacity-90 mb-6">
                   "{t.quote}"
                 </p>
               </div>
               <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 mt-auto">
-                <h4 className="text-xs font-black text-[#1B2D6B]">{t.author}</h4>
+                <h4 className="text-xs font-black text-[#0f172a] dark:text-slate-200">{t.author}</h4>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{t.role}</p>
-                <p className="text-[9px] text-[#2563EB] font-bold mt-0.5">{t.hosp}</p>
+                <p className="text-[9px] text-teal-650 dark:text-teal-400 font-bold mt-0.5">{t.hosp}</p>
               </div>
             </motion.div>
           ))}
@@ -855,20 +837,16 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 md:p-14 rounded-[2.5rem] text-center border relative overflow-hidden flex flex-col items-center shadow-xl"
-          style={{ 
-            background: "linear-gradient(135deg, rgba(37,99,235,0.05), rgba(5,150,105,0.05))",
-            borderColor: "rgba(37,99,235,0.12)"
-          }}
+          className="p-8 md:p-14 rounded-[2.5rem] text-center border relative overflow-hidden flex flex-col items-center shadow-xl bg-gradient-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-900/40 dark:to-slate-950/40 border-slate-200/60 dark:border-slate-800/80"
         >
           {/* Decorative glows */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
 
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-3 block">Progressive Web App</span>
-          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight mb-4 max-w-xl" style={{ color: "#1B2D6B" }}>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 mb-3 block">Progressive Web App</span>
+          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight mb-4 max-w-xl text-[#0f172a] dark:text-white">
             Install ReVive on your mobile home screen.
           </h2>
-          <p className="text-sm mt-1 text-slate-500 max-w-lg mb-8 leading-relaxed">
+          <p className="text-sm mt-1 text-slate-500 dark:text-slate-400 max-w-lg mb-8 leading-relaxed">
             ReVive runs entirely offline. Add it to your phone's home screen to access fast tests, local history records, and browser notifications instantly.
           </p>
 
@@ -877,7 +855,7 @@ export default function LandingPage() {
               <button 
                 onClick={handleInstallClick}
                 className="px-8 py-3.5 text-xs font-black uppercase tracking-widest text-white rounded-2xl cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 8px 25px rgba(37,99,235,0.2)" }}
+                style={{ background: "linear-gradient(135deg, #0f172a, #14b8a6)", boxShadow: "0 8px 25px rgba(20,184,166,0.15)" }}
               >
                 <Download className="w-4 h-4 animate-bounce" />
                 <span>Install PWA App</span>
@@ -885,7 +863,7 @@ export default function LandingPage() {
             ) : (
               <Link href={profile.name ? "/dashboard" : "/profile"}>
                 <span className="px-8 py-3.5 text-xs font-black uppercase tracking-widest text-white rounded-2xl cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-                  style={{ background: "linear-gradient(135deg, #1B2D6B, #2563EB)", boxShadow: "0 8px 25px rgba(37,99,235,0.2)" }}>
+                  style={{ background: "linear-gradient(135deg, #0f172a, #14b8a6)", boxShadow: "0 8px 25px rgba(20,184,166,0.15)" }}>
                   <span>Launch Dashboard</span>
                   <ArrowRight className="w-4 h-4" />
                 </span>

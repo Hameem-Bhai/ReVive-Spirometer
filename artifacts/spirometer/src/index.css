@@ -564,6 +564,7 @@
    SHIMMER / GLOW EFFECTS
 ────────────────────────────────────────────────────────── */
 .shimmer-text {
+  display: inline-block;
   background: linear-gradient(90deg, #1B2D6B 0%, #2563EB 35%, #059669 65%, #1B2D6B 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -573,8 +574,12 @@
 }
 
 .dark .shimmer-text {
+  display: inline-block;
   background: linear-gradient(90deg, #818cf8 0%, #34d399 40%, #a78bfa 70%, #818cf8 100%);
   background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: shimmer 3s linear infinite;
 }
 
