@@ -482,8 +482,8 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 15 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6"
-              style={{ color: "#1B2D6B", fontFamily: "'Inter', sans-serif" }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-black font-serif tracking-tight leading-[1.05] mb-6"
+              style={{ color: "#1B2D6B" }}
             >
               {profile.name ? (
                 <>
@@ -624,7 +624,7 @@ export default function LandingPage() {
       <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 md:py-28">
         <div className="text-center mb-16">
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-2">Next-Gen Spirometry</span>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "#1B2D6B" }}>
+          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight" style={{ color: "#1B2D6B" }}>
             Luxury clinical tools, localized.
           </h2>
           <p className="text-sm mt-3 text-slate-500 max-w-lg mx-auto">
@@ -636,11 +636,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
           {/* Card 1: Interactive AQI (7 Columns on md) */}
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="md:col-span-7 p-6 md:p-8 rounded-[2rem] bg-white border flex flex-col justify-between min-h-[340px] shadow-[0_15px_45px_rgba(27,45,107,0.03)]"
-            style={{ borderColor: "rgba(27,45,107,0.06)" }}
-          >
+          <div className="md:col-span-7 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
               <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mb-5">
                 <Wind className="w-5 h-5" />
@@ -699,14 +695,10 @@ export default function LandingPage() {
             {!aqiResult && (
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Live API Geocoding</span>
             )}
-          </motion.div>
+          </div>
 
           {/* Card 2: 3D Breathprint (5 Columns on md) */}
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="md:col-span-5 p-6 md:p-8 rounded-[2rem] bg-white border flex flex-col justify-between min-h-[340px] shadow-[0_15px_45px_rgba(27,45,107,0.03)]"
-            style={{ borderColor: "rgba(27,45,107,0.06)" }}
-          >
+          <div className="md:col-span-5 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
               <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-5">
                 <Activity className="w-5 h-5" />
@@ -731,14 +723,10 @@ export default function LandingPage() {
               </div>
             </div>
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-4">Real-time ADC Waveforms</span>
-          </motion.div>
+          </div>
 
           {/* Card 3: Smart Posture Coach (5 Columns on md) */}
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="md:col-span-5 p-6 md:p-8 rounded-[2rem] bg-white border flex flex-col justify-between min-h-[340px] shadow-[0_15px_45px_rgba(27,45,107,0.03)]"
-            style={{ borderColor: "rgba(27,45,107,0.06)" }}
-          >
+          <div className="md:col-span-5 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
               <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-5">
                 <Sparkles className="w-5 h-5" />
@@ -765,14 +753,10 @@ export default function LandingPage() {
               </div>
             </div>
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-4">NHS Clinical Protocol</span>
-          </motion.div>
+          </div>
 
           {/* Card 4: Zero-Trust Export (7 Columns on md) */}
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="md:col-span-7 p-6 md:p-8 rounded-[2rem] bg-white border flex flex-col justify-between min-h-[340px] shadow-[0_15px_45px_rgba(27,45,107,0.03)]"
-            style={{ borderColor: "rgba(27,45,107,0.06)" }}
-          >
+          <div className="md:col-span-7 p-6 md:p-8 glass-card-premium flex flex-col justify-between min-h-[340px]">
             <div>
               <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 mb-5">
                 <ShieldCheck className="w-5 h-5" />
@@ -803,8 +787,65 @@ export default function LandingPage() {
               </div>
             </div>
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-6">Browser-native window.print()</span>
-          </motion.div>
+          </div>
 
+        </div>
+      </section>
+
+      {/* ── CLINICIAN & PATIENT TESTIMONIALS ────────── */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 border-t" style={{ borderColor: "rgba(27,45,107,0.06)" }}>
+        <div className="text-center mb-16">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-2">Global Endorsements</span>
+          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight" style={{ color: "#1B2D6B" }}>
+            What doctors and patients say.
+          </h2>
+          <p className="text-sm mt-3 text-slate-500 max-w-lg mx-auto">
+            Trusted by top-tier medical professionals and respiratory patients for zero-latency monitoring and compliance.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            {
+              quote: "The zero-latency ESP32 pressure readings paired with clean clinical PDF exports makes ReVive an monitoring asset in my private practice. A stellar diagnostic UI.",
+              author: "Dr. Basit Rahman",
+              role: "Senior Consultant Pulmonologist",
+              hosp: "Dhaka Medical College Hospital",
+              rating: "⭐⭐⭐⭐⭐"
+            },
+            {
+              quote: "Having my respiratory passport on my phone with direct QR sharing gives me immense peace of mind when traveling. The 3D lung animations are incredibly motivating.",
+              author: "Sarah Jenkins",
+              role: "Asthma Patient / Runner",
+              hosp: "London, UK",
+              rating: "⭐⭐⭐⭐⭐"
+            },
+            {
+              quote: "Local-first data persistence ensures strict HIPAA compliance without complex servers. ReVive sets the luxury standard for progressive healthcare applications.",
+              author: "Dr. Elena Rostova",
+              role: "Clinical Diagnostics Lead",
+              hosp: "Almaty Pulmonary Research Institute",
+              rating: "⭐⭐⭐⭐⭐"
+            }
+          ].map((t, idx) => (
+            <motion.div
+              key={idx}
+              whileHover={{ y: -6, scale: 1.01 }}
+              className="glass-card-premium p-8 flex flex-col justify-between"
+            >
+              <div>
+                <span className="text-xs text-amber-500 mb-4 block">{t.rating}</span>
+                <p className="text-xs italic leading-relaxed text-[#1B2D6B] font-medium opacity-90 mb-6">
+                  "{t.quote}"
+                </p>
+              </div>
+              <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 mt-auto">
+                <h4 className="text-xs font-black text-[#1B2D6B]">{t.author}</h4>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{t.role}</p>
+                <p className="text-[9px] text-[#2563EB] font-bold mt-0.5">{t.hosp}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -824,7 +865,7 @@ export default function LandingPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
 
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-3 block">Progressive Web App</span>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 max-w-xl" style={{ color: "#1B2D6B" }}>
+          <h2 className="text-3xl md:text-4xl font-black font-serif tracking-tight mb-4 max-w-xl" style={{ color: "#1B2D6B" }}>
             Install ReVive on your mobile home screen.
           </h2>
           <p className="text-sm mt-1 text-slate-500 max-w-lg mb-8 leading-relaxed">

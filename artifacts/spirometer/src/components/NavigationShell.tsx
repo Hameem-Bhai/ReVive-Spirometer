@@ -107,7 +107,7 @@ export default function NavigationShell({ children }: NavigationShellProps) {
   const appBg        = isDark ? "hsl(220,27%,8%)"           : "#F0F4FF";
 
   return (
-    <div className="min-h-screen font-sans flex flex-col relative overflow-hidden" style={{ background: appBg }}>
+    <div className="min-h-screen font-sans flex flex-col relative overflow-hidden bg-grain" style={{ background: appBg }}>
       {/* Background animated mesh gradient orbs (hidden on mobile for 60/120fps performance) */}
       <div className="absolute inset-0 bg-dots opacity-[0.15] pointer-events-none z-0" />
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full pointer-events-none z-0 opacity-[0.25] blur-[80px] animate-blob-1 hidden md:block"
