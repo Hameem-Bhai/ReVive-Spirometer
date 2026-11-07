@@ -2,8 +2,6 @@
 
 <img src="docs/assets/revive-signal.gif" width="100%" alt="ReVive: stylized expanding lung shapes, flowing particles, and an illustrative scrolling signal" />
 
-
-
 # ReVive — Spirometer Interface & Respiratory Data Prototype
 
 ### Explore the signal. Question the output.
@@ -18,6 +16,7 @@ sessions, respiratory-data visualization, and AI-assisted educational interfaces
 </div>
 
 ---
+
 ## Recognition
 
 ### 1st Place — STEM Track
