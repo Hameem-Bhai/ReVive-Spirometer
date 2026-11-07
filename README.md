@@ -13,9 +13,6 @@ sessions, respiratory-data visualization, and AI-assisted educational interfaces
 
 [Overview](#from-sensor-input-to-screen) · [Demo modes](#understand-the-modes) · [Setup](#local-development) · [Architecture](#how-the-pieces-connect) · [Safety](#important-scope-and-safety)
 
-</div>
-
----
 
 ## Recognition
 
@@ -28,6 +25,10 @@ to a working respiratory-tech prototype.
 
 The recognition celebrates the project; it does not establish clinical
 validation or regulatory approval.
+
+</div>
+
+---
 
 ## Important scope and safety
 
