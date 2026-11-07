@@ -2,17 +2,7 @@
 
 <img src="docs/assets/revive-signal.gif" width="100%" alt="ReVive: stylized expanding lung shapes, flowing particles, and an illustrative scrolling signal" />
 
-## Recognition
 
-### 1st Place — STEM Track
-Young Asian Summit · Singapore · 2026
-
-ReVive earned first place in the STEM track at the Young Asian Summit
-in Singapore in 2026—a milestone in the project’s journey from an idea
-to a working respiratory-tech prototype.
-
-The recognition celebrates the project; it does not establish clinical
-validation or regulatory approval.
 
 # ReVive — Spirometer Interface & Respiratory Data Prototype
 
@@ -28,6 +18,17 @@ sessions, respiratory-data visualization, and AI-assisted educational interfaces
 </div>
 
 ---
+## Recognition
+
+### 1st Place — STEM Track
+Young Asian Summit · Singapore · 2026
+
+ReVive earned first place in the STEM track at the Young Asian Summit
+in Singapore in 2026—a milestone in the project’s journey from an idea
+to a working respiratory-tech prototype.
+
+The recognition celebrates the project; it does not establish clinical
+validation or regulatory approval.
 
 ## Important scope and safety
 
