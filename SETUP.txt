@@ -1,0 +1,27 @@
+REVIVE README PACK
+
+Copy README.md and docs/ into the root of ReVive-Spirometer. No application code
+is modified by this pack. Add the animated asset with the README before pushing.
+
+Included GIF: original illustrative lung/signal graphic, not a clinical waveform,
+not real patient data, and not a breathing exercise or app screenshot.
+
+Source review covered root metadata, workspace config, API/frontend manifests,
+Vite config, API entrypoint, DB initialization, analysis/chat routes and the
+visible portion of the spirometry page. Some large source output was truncated.
+No complete security audit, GUI execution, device testing or clinical evaluation.
+
+Important findings documented in README:
+- uncalibrated raw samples; fallback generates mock clinical-looking numbers
+- silent AI-to-mock fallback and incomplete mode provenance
+- optional DB/AI env versus required API PORT
+- build before API start; shell-export incompatibility on Windows
+- conflicting native platform dependency configuration
+- placeholder allowBuilds config; pnpm version not pinned
+- root MIT metadata without visible standalone LICENSE
+
+Validation performed: GIF multi-frame decode/loop, README asset path, ZIP integrity.
+The README is a source-informed setup guide, not proof the current build installs.
+
+Suggested commit message:
+docs: add animated ReVive guide and clarify prototype limitations
